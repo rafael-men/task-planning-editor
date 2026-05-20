@@ -1,75 +1,92 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Alert } from "@mui/material";
-import { FileText } from "lucide-react";
-import { api, type PlaybookSummary } from "../api/client";
-import { PlaybookList } from "../components/PlaybookList";
-import { NewPlaybookForm } from "../components/NewPlaybookForm";
+import { FileText, GraduationCap, Plus } from "lucide-react";
+import {
+  api,
+  type OnboardingSummary,
+  type PlaybookSummary,
+} from "../api/client";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
-import { EmptyState } from "../components/ui/EmptyState";
+import { RecentPlaybooksColumn } from "../components/RecentPlaybooksColumn";
+import { RecentOnboardingsColumn } from "../components/RecentOnboardingsColumn";
+
+const MAX = 5;
 
 export function Home() {
-  const [items, setItems] = useState<PlaybookSummary[]>([]);
+  const [playbooks, setPlaybooks] = useState<PlaybookSummary[]>([]);
+  const [onboardings, setOnboardings] = useState<OnboardingSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const nav = useNavigate();
 
   useEffect(() => {
     setLoading(true);
-    api
-      .list()
-      .then(setItems)
+    Promise.all([api.list(), api.listOnboardings()])
+      .then(([pbs, obs]) => {
+        setPlaybooks(pbs.slice(0, MAX));
+        setOnboardings(obs.slice(0, MAX));
+      })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, []);
 
-  async function create(data: { nome: string; descricao?: string }) {
-    try {
-      const p = await api.create({ ...data, conteudo: { secoes: [] } });
-      nav(`/playbooks/${p.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function remove(id: string) {
-    const target = items.find((i) => i.id === id);
-    if (!target) return;
-    if (!confirm(`Excluir "${target.nome}"?`)) return;
-    try {
-      await api.remove(id);
-      setItems((arr) => arr.filter((i) => i.id !== id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
-        title="Seus playbooks"
-        subtitle="Crie playbooks e edite-os por linguagem natural ou manualmente."
+        title="Atividade recente"
+        subtitle="Os últimos playbooks e onboardings que você editou."
       />
 
-      <Card title="Novo playbook">
-        <NewPlaybookForm onCreate={create} />
-      </Card>
+      {error && <Alert severity="error">{error}</Alert>}
 
-      <section>
-        {error && <Alert severity="error" className="mb-4">{error}</Alert>}
-        {loading ? (
-          <p className="text-text-muted">Carregando...</p>
-        ) : items.length === 0 ? (
-          <EmptyState
-            icon={<FileText className="size-8 mx-auto" />}
-            title="Nenhum playbook ainda"
-            description="Crie o primeiro acima."
-          />
-        ) : (
-          <PlaybookList items={items} onRemove={remove} />
-        )}
-      </section>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card
+          title={
+            <span className="inline-flex items-center gap-2">
+              <FileText className="size-4 text-brand-500" />
+              Playbooks recentes
+            </span>
+          }
+          actions={
+            <Link
+              to="/playbooks"
+              className="text-xs text-brand-500 hover:underline inline-flex items-center gap-1"
+            >
+              <Plus className="size-3.5" /> Novo / ver todos
+            </Link>
+          }
+        >
+          {loading ? (
+            <p className="text-text-muted text-sm">Carregando...</p>
+          ) : (
+            <RecentPlaybooksColumn items={playbooks} />
+          )}
+        </Card>
+
+        <Card
+          title={
+            <span className="inline-flex items-center gap-2">
+              <GraduationCap className="size-4 text-brand-500" />
+              Onboardings recentes
+            </span>
+          }
+          actions={
+            <Link
+              to="/onboardings"
+              className="text-xs text-brand-500 hover:underline inline-flex items-center gap-1"
+            >
+              <Plus className="size-3.5" /> Novo / ver todos
+            </Link>
+          }
+        >
+          {loading ? (
+            <p className="text-text-muted text-sm">Carregando...</p>
+          ) : (
+            <RecentOnboardingsColumn items={onboardings} />
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

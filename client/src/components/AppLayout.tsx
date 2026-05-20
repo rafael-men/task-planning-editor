@@ -1,9 +1,17 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { IconButton, Tooltip } from "@mui/material";
-import { BookText, LogOut, UserCircle2 } from "lucide-react";
+import { BookText, FileText, GraduationCap, Home, LogOut, UserCircle2 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 
-function NavItem({ to, children, end }: { to: string; children: React.ReactNode; end?: boolean }) {
+function NavItem({
+  to,
+  children,
+  end,
+}: {
+  to: string;
+  children: React.ReactNode;
+  end?: boolean;
+}) {
   return (
     <NavLink
       to={to}
@@ -39,12 +47,20 @@ export function AppLayout() {
             <span>Editor de Playbooks</span>
           </Link>
           <nav className="flex items-center gap-1">
-            <NavItem to="/" end>Playbooks</NavItem>
+            <NavItem to="/" end>
+              <Home className="size-4" /> Atividade
+            </NavItem>
+            <NavItem to="/playbooks">
+              <FileText className="size-4" /> Playbooks
+            </NavItem>
+            <NavItem to="/onboardings">
+              <GraduationCap className="size-4" /> Onboardings
+            </NavItem>
             <NavItem to="/perfil">
               <UserCircle2 className="size-4" /> Perfil
             </NavItem>
             <Tooltip title={user?.email ?? ""}>
-              <span className="hidden sm:inline text-xs text-text-muted mx-2 max-w-45 truncate">
+              <span className="hidden lg:inline text-xs text-text-muted mx-2 max-w-45 truncate">
                 {user?.email}
               </span>
             </Tooltip>

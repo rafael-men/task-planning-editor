@@ -41,3 +41,62 @@ export const updatePlaybookBody = z.object({
 export const promptBody = z.object({
   prompt: z.string().min(3).max(4000),
 });
+
+export const senioridadeEnum = z.enum([
+  "estagio",
+  "junior",
+  "pleno",
+  "senior",
+  "especialista",
+]);
+export type Senioridade = z.infer<typeof senioridadeEnum>;
+
+export const avaliacaoSchema = z.object({
+  tipo: z.string().min(1),
+  criterios: z.array(z.string()).default([]),
+});
+
+export const cursoSchema = z.object({
+  nome: z.string().min(1),
+  link: z.string().optional(),
+});
+
+export const moduloSchema = z.object({
+  titulo: z.string().min(1),
+  ferramenta: z.string().optional().default(""),
+  objetivo: z.string().optional().default(""),
+  duracao_dias: z.number().int().min(0).default(0),
+  data_inicio: z.string().optional().default(""),
+  data_fim: z.string().optional().default(""),
+  atividades: z.array(z.string()).default([]),
+  cursos: z.array(cursoSchema).default([]),
+  avaliacao: avaliacaoSchema.optional(),
+});
+
+export const onboardingConteudoSchema = z.object({
+  resumo: z.string().optional().default(""),
+  modulos: z.array(moduloSchema).default([]),
+});
+
+export type OnboardingConteudo = z.infer<typeof onboardingConteudoSchema>;
+
+export const createOnboardingBody = z.object({
+  nome: z.string().min(1).max(120),
+  setor: z.string().min(1).max(120),
+  lider: z.string().max(120).optional(),
+  cargo: z.string().min(1).max(120),
+  descricao: z.string().max(2000).optional(),
+  data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve ser YYYY-MM-DD"),
+  senioridade: senioridadeEnum,
+});
+
+export const updateOnboardingBody = z.object({
+  nome: z.string().min(1).max(120).optional(),
+  setor: z.string().min(1).max(120).optional(),
+  lider: z.string().max(120).nullable().optional(),
+  cargo: z.string().min(1).max(120).optional(),
+  descricao: z.string().max(2000).nullable().optional(),
+  data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  senioridade: senioridadeEnum.optional(),
+  conteudo: onboardingConteudoSchema.optional(),
+});

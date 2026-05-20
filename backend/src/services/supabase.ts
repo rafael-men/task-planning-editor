@@ -10,12 +10,10 @@ if (!url || !serviceKey || !anonKey) {
   );
 }
 
-// Cliente principal — usa service_role, ignora RLS, é o que escreve dados.
 export const supabase = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Cliente para validação de JWT de usuário (anon key).
 export const supabaseAuth = createClient(url, anonKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });

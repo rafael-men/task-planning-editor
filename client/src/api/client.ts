@@ -21,8 +21,7 @@ export type Playbook = PlaybookSummary & {
   created_at: string;
 };
 
-export type PromptResult = {
-  playbook: Playbook;
+export type PromptPreview = {
   antes: Conteudo;
   depois: Conteudo;
 };
@@ -32,6 +31,71 @@ export type Me = {
   email: string | null;
   nome: string | null;
   created_at: string;
+};
+
+
+export type Senioridade =
+  | "estagio"
+  | "junior"
+  | "pleno"
+  | "senior"
+  | "especialista";
+
+export type Curso = { nome: string; link?: string };
+
+export type Modulo = {
+  titulo: string;
+  ferramenta: string;
+  objetivo: string;
+  duracao_dias: number;
+  data_inicio: string;
+  data_fim: string;
+  atividades: string[];
+  cursos: Curso[];
+  avaliacao?: { tipo: string; criterios: string[] };
+};
+
+export type OnboardingConteudo = {
+  resumo: string;
+  modulos: Modulo[];
+};
+
+export type OnboardingDados = {
+  nome: string;
+  setor: string;
+  lider?: string;
+  cargo: string;
+  descricao?: string;
+  data_inicio: string;
+  senioridade: Senioridade;
+};
+
+export type OnboardingSummary = {
+  id: string;
+  nome: string;
+  setor: string;
+  cargo: string;
+  data_inicio: string;
+  senioridade: Senioridade;
+  versao: number;
+  updated_at: string;
+};
+
+export type Onboarding = OnboardingSummary & {
+  lider: string | null;
+  descricao: string | null;
+  conteudo: OnboardingConteudo;
+  created_at: string;
+};
+
+export type OnboardingPreview = {
+  dados: OnboardingDados;
+  conteudo: OnboardingConteudo;
+};
+
+export type OnboardingPromptPreview = {
+  antes: OnboardingConteudo;
+  depois: OnboardingConteudo;
 };
 
 const BASE = "/api";
@@ -55,7 +119,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       const body = await res.json();
       msg = typeof body.error === "string" ? body.error : JSON.stringify(body.error ?? body);
     } catch {
-      /* keep default */
     }
     throw new Error(msg);
   }
@@ -64,7 +127,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // playbooks
   list: () => request<PlaybookSummary[]>("/playbooks"),
   get: (id: string) => request<Playbook>(`/playbooks/${id}`),
   create: (body: { nome: string; descricao?: string; conteudo?: Conteudo }) =>
@@ -72,13 +134,41 @@ export const api = {
   update: (id: string, body: { nome?: string; descricao?: string | null; conteudo?: Conteudo }) =>
     request<Playbook>(`/playbooks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   remove: (id: string) => request<void>(`/playbooks/${id}`, { method: "DELETE" }),
-  applyPrompt: (id: string, prompt: string) =>
-    request<PromptResult>(`/playbooks/${id}/prompt`, {
+  previewPrompt: (id: string, prompt: string) =>
+    request<PromptPreview>(`/playbooks/${id}/prompt/preview`, {
       method: "POST",
       body: JSON.stringify({ prompt }),
     }),
-  // perfil
   getMe: () => request<Me>("/me"),
   updateMe: (body: { nome?: string; email?: string }) =>
     request<Me>("/me", { method: "PATCH", body: JSON.stringify(body) }),
+
+
+  listOnboardings: () => request<OnboardingSummary[]>("/onboardings"),
+  getOnboarding: (id: string) => request<Onboarding>(`/onboardings/${id}`),
+  previewOnboarding: (dados: OnboardingDados) =>
+    request<OnboardingPreview>("/onboardings/preview", {
+      method: "POST",
+      body: JSON.stringify(dados),
+    }),
+  createOnboarding: (body: OnboardingDados & { conteudo: OnboardingConteudo }) =>
+    request<Onboarding>("/onboardings", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateOnboarding: (
+    id: string,
+    body: Partial<OnboardingDados> & { conteudo?: OnboardingConteudo }
+  ) =>
+    request<Onboarding>(`/onboardings/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  removeOnboarding: (id: string) =>
+    request<void>(`/onboardings/${id}`, { method: "DELETE" }),
+  previewOnboardingPrompt: (id: string, prompt: string) =>
+    request<OnboardingPromptPreview>(`/onboardings/${id}/prompt/preview`, {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+    }),
 };

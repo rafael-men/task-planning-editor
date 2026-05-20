@@ -7,7 +7,11 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { Perfil } from "./pages/Perfil";
+import { Playbooks } from "./pages/Playbooks";
 import { PlaybookPage } from "./pages/Playbook";
+import { Onboardings } from "./pages/Onboardings";
+import { OnboardingNew } from "./pages/OnboardingNew";
+import { OnboardingDetail } from "./pages/OnboardingDetail";
 
 export default function App() {
   return (
@@ -25,8 +29,12 @@ export default function App() {
               }
             >
               <Route path="/" element={<Home />} />
-              <Route path="/perfil" element={<Perfil />} />
+              <Route path="/playbooks" element={<Playbooks />} />
               <Route path="/playbooks/:id" element={<PlaybookPage />} />
+              <Route path="/onboardings" element={<Onboardings />} />
+              <Route path="/onboardings/novo" element={<OnboardingNew />} />
+              <Route path="/onboardings/:id" element={<OnboardingDetail />} />
+              <Route path="/perfil" element={<Perfil />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
