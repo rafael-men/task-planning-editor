@@ -80,23 +80,28 @@ export const onboardingConteudoSchema = z.object({
 
 export type OnboardingConteudo = z.infer<typeof onboardingConteudoSchema>;
 
+
+const uuid = z.string().uuid();
+
 export const createOnboardingBody = z.object({
   nome: z.string().min(1).max(120),
-  setor: z.string().min(1).max(120),
+  fornecedor_id: uuid,
+  setor_id: uuid,
+  cargo_id: uuid,
+  senioridade: senioridadeEnum,
   lider: z.string().max(120).optional(),
-  cargo: z.string().min(1).max(120),
   descricao: z.string().max(2000).optional(),
   data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve ser YYYY-MM-DD"),
-  senioridade: senioridadeEnum,
 });
 
 export const updateOnboardingBody = z.object({
   nome: z.string().min(1).max(120).optional(),
-  setor: z.string().min(1).max(120).optional(),
+  fornecedor_id: uuid.optional(),
+  setor_id: uuid.optional(),
+  cargo_id: uuid.optional(),
+  senioridade: senioridadeEnum.optional(),
   lider: z.string().max(120).nullable().optional(),
-  cargo: z.string().min(1).max(120).optional(),
   descricao: z.string().max(2000).nullable().optional(),
   data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  senioridade: senioridadeEnum.optional(),
   conteudo: onboardingConteudoSchema.optional(),
 });

@@ -4,6 +4,7 @@ import { Alert, Button, CircularProgress } from "@mui/material";
 import { ArrowLeft, Check, RefreshCw, X } from "lucide-react";
 import {
   api,
+  type Hierarquia,
   type OnboardingConteudo,
   type OnboardingDados,
 } from "../api/client";
@@ -21,6 +22,7 @@ export function OnboardingNew() {
   const [step, setStep] = useState<Step>("form");
   const [tab, setTab] = useState<Tab>("preview");
   const [dados, setDados] = useState<OnboardingDados | null>(null);
+  const [hierarquia, setHierarquia] = useState<Hierarquia | null>(null);
   const [conteudo, setConteudo] = useState<OnboardingConteudo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,7 @@ export function OnboardingNew() {
     try {
       const result = await api.previewOnboarding(d);
       setDados(result.dados);
+      setHierarquia(result.hierarquia);
       setConteudo(result.conteudo);
       setStep("review");
     } catch (e) {
@@ -45,6 +48,7 @@ export function OnboardingNew() {
     setError(null);
     try {
       const result = await api.previewOnboarding(dados);
+      setHierarquia(result.hierarquia);
       setConteudo(result.conteudo);
       setStep("review");
     } catch (e) {
@@ -108,7 +112,9 @@ export function OnboardingNew() {
                   Trilha proposta para {dados.nome}
                 </h2>
                 <p className="text-xs text-text-muted mt-1">
-                  {dados.cargo} · {dados.setor} · início{" "}
+                  {hierarquia?.cargo.nome ?? "—"} ·{" "}
+                  {hierarquia?.setor.nome ?? "—"} ·{" "}
+                  {hierarquia?.fornecedor.nome ?? "—"} · início{" "}
                   {new Date(dados.data_inicio).toLocaleDateString()}
                 </p>
               </div>

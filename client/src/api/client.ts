@@ -60,25 +60,41 @@ export type OnboardingConteudo = {
   modulos: Modulo[];
 };
 
+export type Fornecedor = { id: string; nome: string; descricao?: string | null };
+export type Setor = {
+  id: string;
+  slug: string;
+  nome: string;
+  descricao?: string | null;
+};
+export type Cargo = {
+  id: string;
+  setor_id: string;
+  nome: string;
+  descricao?: string | null;
+};
+
 export type OnboardingDados = {
   nome: string;
-  setor: string;
+  fornecedor_id: string;
+  setor_id: string;
+  cargo_id: string;
+  senioridade: Senioridade;
   lider?: string;
-  cargo: string;
   descricao?: string;
   data_inicio: string;
-  senioridade: Senioridade;
 };
 
 export type OnboardingSummary = {
   id: string;
   nome: string;
-  setor: string;
-  cargo: string;
-  data_inicio: string;
   senioridade: Senioridade;
+  data_inicio: string;
   versao: number;
   updated_at: string;
+  fornecedor: Pick<Fornecedor, "id" | "nome"> | null;
+  setor: Pick<Setor, "id" | "slug" | "nome"> | null;
+  cargo: Pick<Cargo, "id" | "nome"> | null;
 };
 
 export type Onboarding = OnboardingSummary & {
@@ -86,10 +102,21 @@ export type Onboarding = OnboardingSummary & {
   descricao: string | null;
   conteudo: OnboardingConteudo;
   created_at: string;
+  fornecedor: Fornecedor | null;
+  setor: Setor | null;
+  cargo: Cargo | null;
+};
+
+export type Hierarquia = {
+  fornecedor: Fornecedor;
+  setor: Setor;
+  cargo: Cargo;
+  senioridade: Senioridade;
 };
 
 export type OnboardingPreview = {
   dados: OnboardingDados;
+  hierarquia: Hierarquia;
   conteudo: OnboardingConteudo;
 };
 
@@ -171,4 +198,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ prompt }),
     }),
+
+  // catálogo / hierarquia
+  listFornecedores: () => request<Fornecedor[]>("/catalogo/fornecedores"),
+  listSetores: () => request<Setor[]>("/catalogo/setores"),
+  listCargos: (setorId?: string) =>
+    request<Cargo[]>(
+      `/catalogo/cargos${setorId ? `?setor_id=${encodeURIComponent(setorId)}` : ""}`
+    ),
 };

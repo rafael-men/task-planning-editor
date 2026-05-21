@@ -30,7 +30,10 @@ function OnboardingCardItem({
           {ob.nome}
         </div>
         <p className="text-sm text-text-muted mt-1">
-          {ob.cargo} · {ob.setor}
+          {ob.cargo?.nome ?? "—"} · {ob.setor?.nome ?? "—"}
+          {ob.fornecedor?.nome && (
+            <span className="opacity-70"> · {ob.fornecedor.nome}</span>
+          )}
         </p>
         <p className="text-xs text-text-muted mt-2 opacity-80">
           {LABEL_SENIORIDADE[ob.senioridade]} · início{" "}

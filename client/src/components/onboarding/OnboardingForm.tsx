@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, MenuItem, TextField } from "@mui/material";
 import { Sparkles } from "lucide-react";
-import type { OnboardingDados, Senioridade } from "../../api/client";
+import {
+  api,
+  type Cargo,
+  type Fornecedor,
+  type OnboardingDados,
+  type Senioridade,
+  type Setor,
+} from "../../api/client";
 
 const SENIORIDADES: { value: Senioridade; label: string }[] = [
   { value: "estagio", label: "Estágio" },
@@ -24,19 +31,62 @@ export function OnboardingForm({
   submitLabel = "Gerar trilha",
   submittingLabel = "Gerando...",
 }: Props) {
+  // Hierarquia
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [loadingCargos, setLoadingCargos] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  // Campos
   const [nome, setNome] = useState(initial?.nome ?? "");
-  const [setor, setSetor] = useState(initial?.setor ?? "");
+  const [fornecedorId, setFornecedorId] = useState(initial?.fornecedor_id ?? "");
+  const [setorId, setSetorId] = useState(initial?.setor_id ?? "");
+  const [cargoId, setCargoId] = useState(initial?.cargo_id ?? "");
+  const [senioridade, setSenioridade] = useState<Senioridade>(
+    initial?.senioridade ?? "pleno"
+  );
   const [lider, setLider] = useState(initial?.lider ?? "");
-  const [cargo, setCargo] = useState(initial?.cargo ?? "");
   const [descricao, setDescricao] = useState(initial?.descricao ?? "");
   const [dataInicio, setDataInicio] = useState(
     initial?.data_inicio ?? new Date().toISOString().slice(0, 10)
   );
-  const [senioridade, setSenioridade] = useState<Senioridade>(
-    initial?.senioridade ?? "pleno"
-  );
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Carrega fornecedores + setores no mount.
+  useEffect(() => {
+    Promise.all([api.listFornecedores(), api.listSetores()])
+      .then(([fs, ss]) => {
+        setFornecedores(fs);
+        setSetores(ss);
+      })
+      .catch((e) => setCatalogError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoadingCatalog(false));
+  }, []);
+
+  // Quando setor muda, recarrega cargos e reseta o cargo selecionado se não pertence.
+  useEffect(() => {
+    if (!setorId) {
+      setCargos([]);
+      return;
+    }
+    setLoadingCargos(true);
+    api
+      .listCargos(setorId)
+      .then((cs) => {
+        setCargos(cs);
+        if (cargoId && !cs.find((c) => c.id === cargoId)) {
+          setCargoId("");
+        }
+      })
+      .catch((e) => setCatalogError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoadingCargos(false));
+    // cargoId é resetado dentro — não precisa estar na deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setorId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,12 +95,13 @@ export function OnboardingForm({
     try {
       await onSubmit({
         nome: nome.trim(),
-        setor: setor.trim(),
+        fornecedor_id: fornecedorId,
+        setor_id: setorId,
+        cargo_id: cargoId,
+        senioridade,
         lider: lider.trim() || undefined,
-        cargo: cargo.trim(),
         descricao: descricao.trim() || undefined,
         data_inicio: dataInicio,
-        senioridade,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -59,8 +110,13 @@ export function OnboardingForm({
     }
   }
 
+  const podeEnviar =
+    nome.trim() && fornecedorId && setorId && cargoId && dataInicio && !busy;
+
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
+      {catalogError && <Alert severity="error">{catalogError}</Alert>}
+
       <fieldset className="grid sm:grid-cols-2 gap-4">
         <legend className="text-xs uppercase tracking-wide text-text-muted mb-1 col-span-full">
           Identificação
@@ -69,22 +125,6 @@ export function OnboardingForm({
           label="Nome do colaborador"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          required
-          size="small"
-          fullWidth
-        />
-        <TextField
-          label="Cargo"
-          value={cargo}
-          onChange={(e) => setCargo(e.target.value)}
-          required
-          size="small"
-          fullWidth
-        />
-        <TextField
-          label="Setor"
-          value={setor}
-          onChange={(e) => setSetor(e.target.value)}
           required
           size="small"
           fullWidth
@@ -100,18 +140,72 @@ export function OnboardingForm({
 
       <fieldset className="grid sm:grid-cols-2 gap-4">
         <legend className="text-xs uppercase tracking-wide text-text-muted mb-1 col-span-full">
-          Cronograma e nível
+          Alocação hierárquica
         </legend>
+
         <TextField
-          label="Data de início"
-          type="date"
-          value={dataInicio}
-          onChange={(e) => setDataInicio(e.target.value)}
-          slotProps={{ inputLabel: { shrink: true } }}
+          select
+          label="Fornecedor"
+          value={fornecedorId}
+          onChange={(e) => setFornecedorId(e.target.value)}
           required
           size="small"
           fullWidth
-        />
+          disabled={loadingCatalog || fornecedores.length === 0}
+          helperText={
+            loadingCatalog ? "Carregando..." : "Quem está alocando o colaborador"
+          }
+        >
+          {fornecedores.map((f) => (
+            <MenuItem key={f.id} value={f.id}>
+              {f.nome}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Setor"
+          value={setorId}
+          onChange={(e) => setSetorId(e.target.value)}
+          required
+          size="small"
+          fullWidth
+          disabled={loadingCatalog || setores.length === 0}
+        >
+          {setores.map((s) => (
+            <MenuItem key={s.id} value={s.id}>
+              {s.nome}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Cargo"
+          value={cargoId}
+          onChange={(e) => setCargoId(e.target.value)}
+          required
+          size="small"
+          fullWidth
+          disabled={!setorId || loadingCargos || cargos.length === 0}
+          helperText={
+            !setorId
+              ? "Selecione um setor primeiro"
+              : loadingCargos
+                ? "Carregando..."
+                : cargos.length === 0
+                  ? "Nenhum cargo cadastrado neste setor"
+                  : undefined
+          }
+        >
+          {cargos.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.nome}
+            </MenuItem>
+          ))}
+        </TextField>
+
         <TextField
           select
           label="Senioridade"
@@ -126,6 +220,22 @@ export function OnboardingForm({
             </MenuItem>
           ))}
         </TextField>
+      </fieldset>
+
+      <fieldset className="grid sm:grid-cols-2 gap-4">
+        <legend className="text-xs uppercase tracking-wide text-text-muted mb-1 col-span-full">
+          Cronograma
+        </legend>
+        <TextField
+          label="Data de início"
+          type="date"
+          value={dataInicio}
+          onChange={(e) => setDataInicio(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          required
+          size="small"
+          fullWidth
+        />
       </fieldset>
 
       <TextField
@@ -145,7 +255,7 @@ export function OnboardingForm({
         <Button
           type="submit"
           variant="contained"
-          disabled={busy}
+          disabled={!podeEnviar}
           startIcon={<Sparkles className="size-4" />}
         >
           {busy ? submittingLabel : submitLabel}

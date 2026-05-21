@@ -121,9 +121,14 @@ export function OnboardingDetail() {
         title={ob.nome}
         subtitle={
           <>
-            {ob.cargo} · {ob.setor} · {LABEL_SENIORIDADE[ob.senioridade]}
+            {ob.cargo?.nome ?? "—"} · {ob.setor?.nome ?? "—"} ·{" "}
+            {LABEL_SENIORIDADE[ob.senioridade]}
+            {ob.fornecedor?.nome && <> · {ob.fornecedor.nome}</>}
             {ob.lider && <> · líder: {ob.lider}</>}
-            <span className="text-xs"> · v{ob.versao} · início {new Date(ob.data_inicio).toLocaleDateString()}</span>
+            <span className="text-xs">
+              {" "}· v{ob.versao} · início{" "}
+              {new Date(ob.data_inicio).toLocaleDateString()}
+            </span>
           </>
         }
         actions={

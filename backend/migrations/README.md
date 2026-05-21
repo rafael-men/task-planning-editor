@@ -8,6 +8,9 @@ Rode no SQL Editor do Supabase, **em ordem**:
 | `002_seed.sql` | 2 playbooks de exemplo (sem owner) | Não — pule se for usar só com auth |
 | `003_auth_ownership.sql` | `owner_id` + RLS por usuário | Sim |
 | `004_onboardings.sql` | Tabela `onboardings` para trilhas de contratação | Sim |
+| `005_catalogo.sql` | Tabelas `ferramentas` e `cursos` + seed por setor | Sim |
+| `006_hierarquia.sql` | `fornecedores`, `setores`, `cargos` + FKs em `onboardings` | Sim |
+| `007_alocacoes.sql` | Alocação em cascata de ferramentas/cursos pelos 4 níveis | Sim |
 
 Depois da `003`, todo playbook precisa ter `owner_id`. O backend (com `service_role`) ignora RLS, mas grava sempre com `owner_id` preenchido a partir do JWT do usuário.
 

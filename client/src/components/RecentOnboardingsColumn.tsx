@@ -34,10 +34,11 @@ export function RecentOnboardingsColumn({ items }: { items: OnboardingSummary[] 
               <span className="truncate">{ob.nome}</span>
             </div>
             <p className="text-xs text-text-muted mt-1 truncate">
-              {ob.cargo} · {ob.setor}
+              {ob.cargo?.nome ?? "—"} · {ob.setor?.nome ?? "—"}
             </p>
             <p className="text-xs text-text-muted mt-1 opacity-70">
-              {LABEL[ob.senioridade]} · {new Date(ob.updated_at).toLocaleDateString()}
+              {LABEL[ob.senioridade]} · Data de Contratação:{" "}
+              {new Date(ob.updated_at).toLocaleDateString()}
             </p>
           </Link>
         </li>
