@@ -1,7 +1,7 @@
 
-create table if not exists public.ferramenta_alocacoes (
+create table if not exists pmo.ferramenta_alocacoes (
   id              uuid primary key default gen_random_uuid(),
-  ferramenta_id   uuid not null references public.ferramentas(id) on delete cascade,
+  ferramenta_id   uuid not null references pmo.ferramentas(id) on delete cascade,
   escopo          text not null check (escopo in ('fornecedor','setor','cargo','senioridade')),
   alvo_id         uuid,  
   alvo_slug       text,    
@@ -11,13 +11,13 @@ create table if not exists public.ferramenta_alocacoes (
 );
 
 create index if not exists ferramenta_alocacoes_lookup
-  on public.ferramenta_alocacoes(escopo, alvo_id, alvo_slug);
+  on pmo.ferramenta_alocacoes(escopo, alvo_id, alvo_slug);
 create index if not exists ferramenta_alocacoes_ferramenta_idx
-  on public.ferramenta_alocacoes(ferramenta_id);
+  on pmo.ferramenta_alocacoes(ferramenta_id);
 
-create table if not exists public.curso_alocacoes (
+create table if not exists pmo.curso_alocacoes (
   id              uuid primary key default gen_random_uuid(),
-  curso_id        uuid not null references public.cursos(id) on delete cascade,
+  curso_id        uuid not null references pmo.cursos(id) on delete cascade,
   escopo          text not null check (escopo in ('fornecedor','setor','cargo','senioridade')),
   alvo_id         uuid,
   alvo_slug       text,
@@ -27,62 +27,62 @@ create table if not exists public.curso_alocacoes (
 );
 
 create index if not exists curso_alocacoes_lookup
-  on public.curso_alocacoes(escopo, alvo_id, alvo_slug);
+  on pmo.curso_alocacoes(escopo, alvo_id, alvo_slug);
 create index if not exists curso_alocacoes_curso_idx
-  on public.curso_alocacoes(curso_id);
+  on pmo.curso_alocacoes(curso_id);
 
-alter table public.ferramenta_alocacoes enable row level security;
-alter table public.curso_alocacoes enable row level security;
+alter table pmo.ferramenta_alocacoes enable row level security;
+alter table pmo.curso_alocacoes enable row level security;
 
-drop policy if exists "ferramenta_alocacoes read" on public.ferramenta_alocacoes;
-create policy "ferramenta_alocacoes read" on public.ferramenta_alocacoes
+drop policy if exists "ferramenta_alocacoes read" on pmo.ferramenta_alocacoes;
+create policy "ferramenta_alocacoes read" on pmo.ferramenta_alocacoes
   for select to authenticated using (true);
 
-drop policy if exists "curso_alocacoes read" on public.curso_alocacoes;
-create policy "curso_alocacoes read" on public.curso_alocacoes
+drop policy if exists "curso_alocacoes read" on pmo.curso_alocacoes;
+create policy "curso_alocacoes read" on pmo.curso_alocacoes
   for select to authenticated using (true);
 
 
 
-insert into public.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
+insert into pmo.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
 select f.id, 'setor', s.id, 'obrigatoria'
-from public.ferramentas f
+from pmo.ferramentas f
 cross join lateral unnest(f.setores) as fs(slug)
-join public.setores s on s.slug = fs.slug
+join pmo.setores s on s.slug = fs.slug
 on conflict do nothing;
 
-insert into public.curso_alocacoes (curso_id, escopo, alvo_id, obrigatoriedade)
+insert into pmo.curso_alocacoes (curso_id, escopo, alvo_id, obrigatoriedade)
 select c.id, 'setor', s.id, 'sugerida'
-from public.cursos c
+from pmo.cursos c
 cross join lateral unnest(c.setores) as cs(slug)
-join public.setores s on s.slug = cs.slug
+join pmo.setores s on s.slug = cs.slug
 on conflict do nothing;
 
 
-insert into public.ferramentas (nome, descricao, setores, nivel_minimo) values
+insert into pmo.ferramentas (nome, descricao, setores, nivel_minimo) values
   ('Runrunit', 'Gestão de tarefas e cronograma usada por todos os times da Macfor.', '{}', 'estagio'),
   ('Cultura Macfor', 'Manual de cultura, valores, processos e rituais internos.', '{}', 'estagio'),
   ('Hyperlink CRM', 'CRM interno da Macfor para acompanhamento de clientes e contas.', '{}', 'junior')
 on conflict (nome) do nothing;
 
 
-insert into public.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
+insert into pmo.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
 select f.id, 'fornecedor', fo.id, 'obrigatoria'
-from public.ferramentas f
-join public.fornecedores fo on fo.nome = 'Macfor'
+from pmo.ferramentas f
+join pmo.fornecedores fo on fo.nome = 'Macfor'
 where f.nome in ('Runrunit', 'Cultura Macfor', 'Google Workspace', 'Slack', 'Notion')
 on conflict do nothing;
 
-insert into public.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
+insert into pmo.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
 select f.id, 'fornecedor', fo.id, 'sugerida'
-from public.ferramentas f
-join public.fornecedores fo on fo.nome = 'Macfor'
+from pmo.ferramentas f
+join pmo.fornecedores fo on fo.nome = 'Macfor'
 where f.nome = 'Hyperlink CRM'
 on conflict do nothing;
 
 
 
-insert into public.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
+insert into pmo.ferramenta_alocacoes (ferramenta_id, escopo, alvo_id, obrigatoriedade)
 select f.id, 'cargo', c.id, 'obrigatoria'
 from (values
   ('Desenvolvedor(a) Backend',   'Nest.js'),
@@ -133,20 +133,20 @@ from (values
   ('Analista Financeiro',              'Google Workspace'),
   ('Coordenador(a) de Operações',      'Jira')
 ) as v(cargo, ferramenta)
-join public.cargos c on c.nome = v.cargo
-join public.ferramentas f on f.nome = v.ferramenta
+join pmo.cargos c on c.nome = v.cargo
+join pmo.ferramentas f on f.nome = v.ferramenta
 on conflict do nothing;
 
 
-insert into public.ferramentas (nome, descricao, setores, nivel_minimo) values
+insert into pmo.ferramentas (nome, descricao, setores, nivel_minimo) values
   ('Code Review e Mentoria', 'Prática de revisar PRs, dar feedback construtivo, mentorar juniores.', '{}', 'pleno'),
   ('Comunicação com stakeholders', 'Apresentar resultados para liderança, alinhamento com PM/cliente, gestão de expectativas.', '{}', 'pleno'),
   ('Liderança técnica', 'Definição de arquitetura, roadmap técnico, gestão de squad.', '{}', 'senior')
 on conflict (nome) do nothing;
 
-insert into public.ferramenta_alocacoes (ferramenta_id, escopo, alvo_slug, obrigatoriedade)
+insert into pmo.ferramenta_alocacoes (ferramenta_id, escopo, alvo_slug, obrigatoriedade)
 select f.id, 'senioridade', v.alvo, v.obriga
-from public.ferramentas f
+from pmo.ferramentas f
 join (values
   ('Code Review e Mentoria',           'pleno',        'obrigatoria'),
   ('Code Review e Mentoria',           'senior',       'obrigatoria'),

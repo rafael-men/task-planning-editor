@@ -81,11 +81,31 @@ export const onboardingConteudoSchema = z.object({
 export type OnboardingConteudo = z.infer<typeof onboardingConteudoSchema>;
 
 
+export const statusModuloEnum = z.enum(["pendente", "em_andamento", "concluido"]);
+export type StatusModulo = z.infer<typeof statusModuloEnum>;
+
+export const progressoModuloSchema = z.object({
+  status: statusModuloEnum,
+  atualizado_em: z.string().optional(),
+  observacao: z.string().max(2000).optional(),
+});
+
+
+export const progressoSchema = z.record(z.string(), progressoModuloSchema);
+export type Progresso = z.infer<typeof progressoSchema>;
+
+export const atualizarProgressoBody = z.object({
+  modulo_idx: z.number().int().min(0),
+  status: statusModuloEnum,
+  observacao: z.string().max(2000).optional(),
+});
+
+
 const uuid = z.string().uuid();
 
 export const createOnboardingBody = z.object({
   nome: z.string().min(1).max(120),
-  fornecedor_id: uuid,
+  fornecedor_user_id: uuid,
   setor_id: uuid,
   cargo_id: uuid,
   senioridade: senioridadeEnum,
@@ -96,7 +116,7 @@ export const createOnboardingBody = z.object({
 
 export const updateOnboardingBody = z.object({
   nome: z.string().min(1).max(120).optional(),
-  fornecedor_id: uuid.optional(),
+  fornecedor_user_id: uuid.optional(),
   setor_id: uuid.optional(),
   cargo_id: uuid.optional(),
   senioridade: senioridadeEnum.optional(),

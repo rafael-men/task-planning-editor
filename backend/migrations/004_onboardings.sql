@@ -1,4 +1,4 @@
-create table if not exists public.onboardings (
+create table if not exists pmo.onboardings (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null references auth.users(id) on delete cascade,
   nome          text not null,
@@ -14,23 +14,23 @@ create table if not exists public.onboardings (
   updated_at    timestamptz not null default now()
 );
 
-create index if not exists onboardings_owner_id_idx on public.onboardings(owner_id, updated_at desc);
+create index if not exists onboardings_owner_id_idx on pmo.onboardings(owner_id, updated_at desc);
 
 
-alter table public.onboardings enable row level security;
+alter table pmo.onboardings enable row level security;
 
-drop policy if exists "onboardings owner select" on public.onboardings;
-create policy "onboardings owner select" on public.onboardings
+drop policy if exists "onboardings owner select" on pmo.onboardings;
+create policy "onboardings owner select" on pmo.onboardings
   for select using (auth.uid() = owner_id);
 
-drop policy if exists "onboardings owner insert" on public.onboardings;
-create policy "onboardings owner insert" on public.onboardings
+drop policy if exists "onboardings owner insert" on pmo.onboardings;
+create policy "onboardings owner insert" on pmo.onboardings
   for insert with check (auth.uid() = owner_id);
 
-drop policy if exists "onboardings owner update" on public.onboardings;
-create policy "onboardings owner update" on public.onboardings
+drop policy if exists "onboardings owner update" on pmo.onboardings;
+create policy "onboardings owner update" on pmo.onboardings
   for update using (auth.uid() = owner_id);
 
-drop policy if exists "onboardings owner delete" on public.onboardings;
-create policy "onboardings owner delete" on public.onboardings
+drop policy if exists "onboardings owner delete" on pmo.onboardings;
+create policy "onboardings owner delete" on pmo.onboardings
   for delete using (auth.uid() = owner_id);

@@ -25,14 +25,21 @@ type Props = {
   submittingLabel?: string;
 };
 
+/** Exibição de um líder: nome se houver, "(sem nome)" caso contrário. */
+function rotuloLider(f: Fornecedor): string {
+  const nome = f.nome?.trim();
+  if (nome) return nome;
+  return "(sem nome)";
+}
+
 export function OnboardingForm({
   initial,
   onSubmit,
   submitLabel = "Gerar trilha",
   submittingLabel = "Gerando...",
 }: Props) {
-  // Hierarquia
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  // Catálogos
+  const [lideres, setLideres] = useState<Fornecedor[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
@@ -41,9 +48,11 @@ export function OnboardingForm({
 
   // Campos
   const [nome, setNome] = useState(initial?.nome ?? "");
-  const [fornecedorId, setFornecedorId] = useState(initial?.fornecedor_id ?? "");
   const [setorId, setSetorId] = useState(initial?.setor_id ?? "");
   const [cargoId, setCargoId] = useState(initial?.cargo_id ?? "");
+  const [fornecedorUserId, setFornecedorUserId] = useState(
+    initial?.fornecedor_user_id ?? ""
+  );
   const [senioridade, setSenioridade] = useState<Senioridade>(
     initial?.senioridade ?? "pleno"
   );
@@ -56,18 +65,18 @@ export function OnboardingForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carrega fornecedores + setores no mount.
+  // Carrega líderes + setores no mount.
   useEffect(() => {
-    Promise.all([api.listFornecedores(), api.listSetores()])
-      .then(([fs, ss]) => {
-        setFornecedores(fs);
+    Promise.all([api.listLideres(), api.listSetores()])
+      .then(([ls, ss]) => {
+        setLideres(ls);
         setSetores(ss);
       })
       .catch((e) => setCatalogError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoadingCatalog(false));
   }, []);
 
-  // Quando setor muda, recarrega cargos e reseta o cargo selecionado se não pertence.
+  // Quando setor muda, recarrega cargos.
   useEffect(() => {
     if (!setorId) {
       setCargos([]);
@@ -84,7 +93,6 @@ export function OnboardingForm({
       })
       .catch((e) => setCatalogError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoadingCargos(false));
-    // cargoId é resetado dentro — não precisa estar na deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setorId]);
 
@@ -95,7 +103,7 @@ export function OnboardingForm({
     try {
       await onSubmit({
         nome: nome.trim(),
-        fornecedor_id: fornecedorId,
+        fornecedor_user_id: fornecedorUserId,
         setor_id: setorId,
         cargo_id: cargoId,
         senioridade,
@@ -111,7 +119,7 @@ export function OnboardingForm({
   }
 
   const podeEnviar =
-    nome.trim() && fornecedorId && setorId && cargoId && dataInicio && !busy;
+    nome.trim() && fornecedorUserId && setorId && cargoId && dataInicio && !busy;
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
@@ -130,11 +138,12 @@ export function OnboardingForm({
           fullWidth
         />
         <TextField
-          label="Líder direto"
+          label="Líder direto (texto)"
           value={lider}
           onChange={(e) => setLider(e.target.value)}
           size="small"
           fullWidth
+          helperText="Nome livre — não confunda com o fornecedor (usuário do sistema)"
         />
       </fieldset>
 
@@ -142,26 +151,6 @@ export function OnboardingForm({
         <legend className="text-xs uppercase tracking-wide text-text-muted mb-1 col-span-full">
           Alocação hierárquica
         </legend>
-
-        <TextField
-          select
-          label="Fornecedor"
-          value={fornecedorId}
-          onChange={(e) => setFornecedorId(e.target.value)}
-          required
-          size="small"
-          fullWidth
-          disabled={loadingCatalog || fornecedores.length === 0}
-          helperText={
-            loadingCatalog ? "Carregando..." : "Quem está alocando o colaborador"
-          }
-        >
-          {fornecedores.map((f) => (
-            <MenuItem key={f.id} value={f.id}>
-              {f.nome}
-            </MenuItem>
-          ))}
-        </TextField>
 
         <TextField
           select
@@ -202,6 +191,33 @@ export function OnboardingForm({
           {cargos.map((c) => (
             <MenuItem key={c.id} value={c.id}>
               {c.nome}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Fornecedor (líder responsável)"
+          value={fornecedorUserId}
+          onChange={(e) => setFornecedorUserId(e.target.value)}
+          required
+          size="small"
+          fullWidth
+          disabled={loadingCatalog || lideres.length === 0}
+          helperText={
+            loadingCatalog
+              ? "Carregando..."
+              : lideres.length === 0
+                ? "Nenhum líder cadastrado no sistema ainda."
+                : "Esse usuário poderá ver e editar este onboarding."
+          }
+        >
+          {lideres.map((f) => (
+            <MenuItem key={f.id} value={f.id}>
+              {rotuloLider(f)}
+              {f.email && (
+                <span className="text-xs text-text-muted ml-2">{f.email}</span>
+              )}
             </MenuItem>
           ))}
         </TextField>

@@ -6,6 +6,7 @@ import { api, type OnboardingSummary, type Senioridade } from "../api/client";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EmptyState } from "../components/ui/EmptyState";
+import { useAuth } from "../auth/AuthProvider";
 
 const LABEL_SENIORIDADE: Record<Senioridade, string> = {
   estagio: "Estágio",
@@ -18,9 +19,11 @@ const LABEL_SENIORIDADE: Record<Senioridade, string> = {
 function OnboardingCardItem({
   ob,
   onRemove,
+  canRemove,
 }: {
   ob: OnboardingSummary;
   onRemove: (id: string) => void;
+  canRemove: boolean;
 }) {
   return (
     <li className="group relative border border-border rounded-lg bg-surface hover:border-brand-500 transition-colors">
@@ -31,8 +34,10 @@ function OnboardingCardItem({
         </div>
         <p className="text-sm text-text-muted mt-1">
           {ob.cargo?.nome ?? "—"} · {ob.setor?.nome ?? "—"}
-          {ob.fornecedor?.nome && (
-            <span className="opacity-70"> · {ob.fornecedor.nome}</span>
+          {ob.fornecedor && (
+            <span className="opacity-70">
+              {" "}· {ob.fornecedor.nome ?? "(sem nome)"}
+            </span>
           )}
         </p>
         <p className="text-xs text-text-muted mt-2 opacity-80">
@@ -40,19 +45,21 @@ function OnboardingCardItem({
           {new Date(ob.data_inicio).toLocaleDateString()} · v{ob.versao}
         </p>
       </Link>
-      <Tooltip title="Excluir">
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.preventDefault();
-            onRemove(ob.id);
-          }}
-          className="absolute! top-2 right-2 opacity-0 group-hover:opacity-100"
-          aria-label="Excluir"
-        >
-          <Trash2 className="size-4 text-red-500" />
-        </IconButton>
-      </Tooltip>
+      {canRemove && (
+        <Tooltip title="Excluir">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.preventDefault();
+              onRemove(ob.id);
+            }}
+            className="absolute! top-2 right-2 opacity-0 group-hover:opacity-100"
+            aria-label="Excluir"
+          >
+            <Trash2 className="size-4 text-red-500" />
+          </IconButton>
+        </Tooltip>
+      )}
     </li>
   );
 }
@@ -62,6 +69,7 @@ export function Onboardings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const nav = useNavigate();
+  const { isRH } = useAuth();
 
   useEffect(() => {
     setLoading(true);
@@ -90,14 +98,16 @@ export function Onboardings() {
         title="Onboardings"
         subtitle="Trilhas de treinamento para novas contratações."
         actions={
-          <button
-            type="button"
-            onClick={() => nav("/onboardings/novo")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium transition-colors"
-          >
-            <Plus className="size-4" />
-            Novo onboarding
-          </button>
+          isRH ? (
+            <button
+              type="button"
+              onClick={() => nav("/onboardings/novo")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium transition-colors"
+            >
+              <Plus className="size-4" />
+              Novo onboarding
+            </button>
+          ) : undefined
         }
       />
 
@@ -114,7 +124,12 @@ export function Onboardings() {
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {items.map((ob) => (
-              <OnboardingCardItem key={ob.id} ob={ob} onRemove={remove} />
+              <OnboardingCardItem
+                key={ob.id}
+                ob={ob}
+                onRemove={remove}
+                canRemove={isRH}
+              />
             ))}
           </ul>
         )}

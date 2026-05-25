@@ -1,12 +1,12 @@
 
-create table if not exists public.fornecedores (
+create table if not exists pmo.fornecedores (
   id          uuid primary key default gen_random_uuid(),
   nome        text not null unique,
   descricao   text,
   created_at  timestamptz not null default now()
 );
 
-create table if not exists public.setores (
+create table if not exists pmo.setores (
   id          uuid primary key default gen_random_uuid(),
   slug        text not null unique,
   nome        text not null,
@@ -14,50 +14,50 @@ create table if not exists public.setores (
   created_at  timestamptz not null default now()
 );
 
-create table if not exists public.cargos (
+create table if not exists pmo.cargos (
   id          uuid primary key default gen_random_uuid(),
-  setor_id    uuid not null references public.setores(id) on delete restrict,
+  setor_id    uuid not null references pmo.setores(id) on delete restrict,
   nome        text not null,
   descricao   text,
   created_at  timestamptz not null default now(),
   unique (setor_id, nome)
 );
 
-create index if not exists cargos_setor_idx on public.cargos(setor_id);
+create index if not exists cargos_setor_idx on pmo.cargos(setor_id);
 
-alter table public.fornecedores enable row level security;
-alter table public.setores enable row level security;
-alter table public.cargos enable row level security;
+alter table pmo.fornecedores enable row level security;
+alter table pmo.setores enable row level security;
+alter table pmo.cargos enable row level security;
 
-drop policy if exists "fornecedores read" on public.fornecedores;
-create policy "fornecedores read" on public.fornecedores
+drop policy if exists "fornecedores read" on pmo.fornecedores;
+create policy "fornecedores read" on pmo.fornecedores
   for select to authenticated using (true);
 
-drop policy if exists "setores read" on public.setores;
-create policy "setores read" on public.setores
+drop policy if exists "setores read" on pmo.setores;
+create policy "setores read" on pmo.setores
   for select to authenticated using (true);
 
-drop policy if exists "cargos read" on public.cargos;
-create policy "cargos read" on public.cargos
+drop policy if exists "cargos read" on pmo.cargos;
+create policy "cargos read" on pmo.cargos
   for select to authenticated using (true);
 
-alter table public.onboardings
-  add column if not exists fornecedor_id uuid references public.fornecedores(id) on delete set null,
-  add column if not exists setor_id      uuid references public.setores(id)      on delete set null,
-  add column if not exists cargo_id      uuid references public.cargos(id)       on delete set null;
+alter table pmo.onboardings
+  add column if not exists fornecedor_id uuid references pmo.fornecedores(id) on delete set null,
+  add column if not exists setor_id      uuid references pmo.setores(id)      on delete set null,
+  add column if not exists cargo_id      uuid references pmo.cargos(id)       on delete set null;
 
-create index if not exists onboardings_fornecedor_idx on public.onboardings(fornecedor_id);
-create index if not exists onboardings_setor_idx     on public.onboardings(setor_id);
-create index if not exists onboardings_cargo_idx     on public.onboardings(cargo_id);
+create index if not exists onboardings_fornecedor_idx on pmo.onboardings(fornecedor_id);
+create index if not exists onboardings_setor_idx     on pmo.onboardings(setor_id);
+create index if not exists onboardings_cargo_idx     on pmo.onboardings(cargo_id);
 
 
 
-insert into public.fornecedores (nome, descricao) values
+insert into pmo.fornecedores (nome, descricao) values
   ('Macfor', 'Equipe interna Macfor (contratação direta).'),
   ('Parceiro externo', 'Profissional terceirizado / freelancer alocado em projeto.')
 on conflict (nome) do nothing;
 
-insert into public.setores (slug, nome, descricao) values
+insert into pmo.setores (slug, nome, descricao) values
   ('tecnologia', 'Tecnologia',  'Engenharia de software, dados e infra.'),
   ('design',     'Design',      'UI/UX, motion, identidade visual.'),
   ('social',     'Social',      'Mídias sociais, marketing de conteúdo, criação.'),
@@ -67,9 +67,9 @@ insert into public.setores (slug, nome, descricao) values
 on conflict (slug) do nothing;
 
 
-insert into public.cargos (setor_id, nome, descricao)
+insert into pmo.cargos (setor_id, nome, descricao)
 select s.id, v.nome, v.descricao
-from public.setores s
+from pmo.setores s
 join (values
 
   ('tecnologia', 'Desenvolvedor(a) Backend',   'Construção de APIs, serviços e integrações.'),

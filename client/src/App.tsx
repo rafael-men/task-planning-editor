@@ -12,6 +12,8 @@ import { PlaybookPage } from "./pages/Playbook";
 import { Onboardings } from "./pages/Onboardings";
 import { OnboardingNew } from "./pages/OnboardingNew";
 import { OnboardingDetail } from "./pages/OnboardingDetail";
+import { AdminPerfis } from "./pages/AdminPerfis";
+import { RequireAdmin } from "./auth/RequireRH";
 
 export default function App() {
   return (
@@ -35,6 +37,14 @@ export default function App() {
               <Route path="/onboardings/novo" element={<OnboardingNew />} />
               <Route path="/onboardings/:id" element={<OnboardingDetail />} />
               <Route path="/perfil" element={<Perfil />} />
+              <Route
+                path="/admin/perfis"
+                element={
+                  <RequireAdmin>
+                    <AdminPerfis />
+                  </RequireAdmin>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

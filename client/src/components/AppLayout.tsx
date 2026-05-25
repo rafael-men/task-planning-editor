@@ -1,6 +1,14 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { IconButton, Tooltip } from "@mui/material";
-import { BookText, FileText, GraduationCap, Home, LogOut, UserCircle2 } from "lucide-react";
+import {
+  BookText,
+  FileText,
+  GraduationCap,
+  Home,
+  LogOut,
+  ShieldCheck,
+  UserCircle2,
+} from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 
 function NavItem({
@@ -30,7 +38,7 @@ function NavItem({
 }
 
 export function AppLayout() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isLider } = useAuth();
   const nav = useNavigate();
 
   async function logout() {
@@ -50,15 +58,22 @@ export function AppLayout() {
             <NavItem to="/" end>
               <Home className="size-4" /> Atividade
             </NavItem>
-            <NavItem to="/playbooks">
-              <FileText className="size-4" /> Playbooks
-            </NavItem>
+            {!isLider && (
+              <NavItem to="/playbooks">
+                <FileText className="size-4" /> Playbooks
+              </NavItem>
+            )}
             <NavItem to="/onboardings">
               <GraduationCap className="size-4" /> Onboardings
             </NavItem>
             <NavItem to="/perfil">
               <UserCircle2 className="size-4" /> Perfil
             </NavItem>
+            {isAdmin && (
+              <NavItem to="/admin/perfis">
+                <ShieldCheck className="size-4" /> Acessos
+              </NavItem>
+            )}
             <Tooltip title={user?.email ?? ""}>
               <span className="hidden lg:inline text-xs text-text-muted mx-2 max-w-45 truncate">
                 {user?.email}

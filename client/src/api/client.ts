@@ -26,11 +26,25 @@ export type PromptPreview = {
   depois: Conteudo;
 };
 
+export type Role = "admin" | "rh" | "lider";
+
 export type Me = {
   id: string;
   email: string | null;
   nome: string | null;
   created_at: string;
+  role: Role;
+  setor_id: string | null;
+};
+
+export type PerfilUsuario = {
+  user_id: string;
+  role: Role;
+  setor_id: string | null;
+  email: string | null;
+  nome: string | null;
+  updated_at: string;
+  setor: { id: string; slug: string; nome: string } | null;
 };
 
 
@@ -60,7 +74,15 @@ export type OnboardingConteudo = {
   modulos: Modulo[];
 };
 
-export type Fornecedor = { id: string; nome: string; descricao?: string | null };
+/**
+ * Fornecedor = um usuário cadastrado (líder) que é o responsável pela contratação.
+ * Identificado pelo email; exibido pelo nome ou "(sem nome)" se vazio.
+ */
+export type Fornecedor = {
+  id: string;
+  nome: string | null;
+  email: string | null;
+};
 export type Setor = {
   id: string;
   slug: string;
@@ -76,7 +98,7 @@ export type Cargo = {
 
 export type OnboardingDados = {
   nome: string;
-  fornecedor_id: string;
+  fornecedor_user_id: string;
   setor_id: string;
   cargo_id: string;
   senioridade: Senioridade;
@@ -92,15 +114,28 @@ export type OnboardingSummary = {
   data_inicio: string;
   versao: number;
   updated_at: string;
-  fornecedor: Pick<Fornecedor, "id" | "nome"> | null;
+  fornecedor_user_id: string | null;
+  fornecedor: Fornecedor | null;
   setor: Pick<Setor, "id" | "slug" | "nome"> | null;
   cargo: Pick<Cargo, "id" | "nome"> | null;
 };
+
+export type StatusModulo = "pendente" | "em_andamento" | "concluido";
+
+export type ProgressoModulo = {
+  status: StatusModulo;
+  atualizado_em?: string;
+  observacao?: string;
+};
+
+/** Mapa: índice do módulo (string) → progresso. */
+export type Progresso = Record<string, ProgressoModulo>;
 
 export type Onboarding = OnboardingSummary & {
   lider: string | null;
   descricao: string | null;
   conteudo: OnboardingConteudo;
+  progresso: Progresso;
   created_at: string;
   fornecedor: Fornecedor | null;
   setor: Setor | null;
@@ -139,13 +174,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...(await authHeader()),
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };
-  const res = await fetch(BASE + path, { ...init, headers });
+  // Timeout de 60s — evita o botão "Salvando..." ficar pendurado para sempre
+  // quando o servidor não responde ou a rede caiu.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60_000);
+  let res: Response;
+  try {
+    res = await fetch(BASE + path, { ...init, headers, signal: controller.signal });
+  } catch (e) {
+    clearTimeout(timeout);
+    if ((e as Error).name === "AbortError") {
+      throw new Error("Tempo esgotado (60s). Verifique se o backend está rodando.");
+    }
+    throw e;
+  }
+  clearTimeout(timeout);
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {
       const body = await res.json();
       msg = typeof body.error === "string" ? body.error : JSON.stringify(body.error ?? body);
     } catch {
+      /* sem body — mantém HTTP <status> */
     }
     throw new Error(msg);
   }
@@ -198,12 +248,32 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ prompt }),
     }),
+  atualizarProgresso: (
+    id: string,
+    body: { modulo_idx: number; status: StatusModulo; observacao?: string }
+  ) =>
+    request<{ progresso: Progresso }>(`/onboardings/${id}/progresso`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
 
   // catálogo / hierarquia
-  listFornecedores: () => request<Fornecedor[]>("/catalogo/fornecedores"),
+  /** Lista usuários (líderes) que podem ser escolhidos como fornecedor. */
+  listLideres: () => request<Fornecedor[]>("/catalogo/lideres"),
   listSetores: () => request<Setor[]>("/catalogo/setores"),
   listCargos: (setorId?: string) =>
     request<Cargo[]>(
       `/catalogo/cargos${setorId ? `?setor_id=${encodeURIComponent(setorId)}` : ""}`
+    ),
+
+  // admin (apenas RH)
+  listPerfis: () => request<PerfilUsuario[]>("/admin/perfis"),
+  updatePerfil: (
+    userId: string,
+    body: { role?: Role; setor_id?: string | null }
+  ) =>
+    request<{ user_id: string; role: Role; setor_id: string | null; updated_at: string }>(
+      `/admin/perfis/${userId}`,
+      { method: "PATCH", body: JSON.stringify(body) }
     ),
 };

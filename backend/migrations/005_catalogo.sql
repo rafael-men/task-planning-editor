@@ -1,5 +1,5 @@
 
-create table if not exists public.ferramentas (
+create table if not exists pmo.ferramentas (
   id            uuid primary key default gen_random_uuid(),
   nome          text not null unique,
   descricao     text not null,
@@ -9,35 +9,35 @@ create table if not exists public.ferramentas (
   created_at    timestamptz not null default now()
 );
 
-create index if not exists ferramentas_setores_idx on public.ferramentas using gin(setores);
+create index if not exists ferramentas_setores_idx on pmo.ferramentas using gin(setores);
 
-create table if not exists public.cursos (
+create table if not exists pmo.cursos (
   id            uuid primary key default gen_random_uuid(),
   nome          text not null,
   link          text,
-  ferramenta_id uuid references public.ferramentas(id) on delete set null,
+  ferramenta_id uuid references pmo.ferramentas(id) on delete set null,
   setores       text[] not null default '{}',
   duracao_horas int,
   formato       text check (formato in ('video','livro','workshop','documentacao','curso_online','mentoria')),
   created_at    timestamptz not null default now()
 );
 
-create index if not exists cursos_ferramenta_idx on public.cursos(ferramenta_id);
-create index if not exists cursos_setores_idx on public.cursos using gin(setores);
+create index if not exists cursos_ferramenta_idx on pmo.cursos(ferramenta_id);
+create index if not exists cursos_setores_idx on pmo.cursos using gin(setores);
 
 
-alter table public.ferramentas enable row level security;
-alter table public.cursos enable row level security;
+alter table pmo.ferramentas enable row level security;
+alter table pmo.cursos enable row level security;
 
-drop policy if exists "ferramentas read" on public.ferramentas;
-create policy "ferramentas read" on public.ferramentas
+drop policy if exists "ferramentas read" on pmo.ferramentas;
+create policy "ferramentas read" on pmo.ferramentas
   for select to authenticated using (true);
 
-drop policy if exists "cursos read" on public.cursos;
-create policy "cursos read" on public.cursos
+drop policy if exists "cursos read" on pmo.cursos;
+create policy "cursos read" on pmo.cursos
   for select to authenticated using (true);
 
-insert into public.ferramentas (nome, descricao, setores, nivel_minimo) values
+insert into pmo.ferramentas (nome, descricao, setores, nivel_minimo) values
 
   ('n8n', 'Automação de fluxos low-code, integrações via nós, webhooks, automação de processos internos.', '{tecnologia,operacoes}', 'junior'),
   ('Nest.js', 'Framework Node para backend modular: controllers, providers, DI, integração com Postgres/Supabase.', '{tecnologia}', 'junior'),
@@ -80,9 +80,9 @@ insert into public.ferramentas (nome, descricao, setores, nivel_minimo) values
 on conflict (nome) do nothing;
 
 -- Cursos vinculados às ferramentas acima.
-insert into public.cursos (nome, link, ferramenta_id, setores, duracao_horas, formato)
+insert into pmo.cursos (nome, link, ferramenta_id, setores, duracao_horas, formato)
 select v.nome, v.link, f.id, v.setores, v.duracao_horas, v.formato
-from public.ferramentas f
+from pmo.ferramentas f
 join (values
   -- Tecnologia
   ('n8n', 'Curso completo de n8n - automações práticas', 'https://docs.n8n.io/courses/', '{tecnologia,operacoes}'::text[], 12, 'curso_online'),

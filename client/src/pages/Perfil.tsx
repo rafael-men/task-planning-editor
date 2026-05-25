@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Avatar, Button, Snackbar, TextField } from "@mui/material";
 import { Save, UserCog } from "lucide-react";
-import { api, type Me } from "../api/client";
+import { api, type Me, type Role } from "../api/client";
 import { Card } from "../components/ui/Card";
 
 function PerfilForm({ me, onSaved }: { me: Me; onSaved: (m: Me) => void }) {
@@ -71,6 +71,18 @@ function PerfilForm({ me, onSaved }: { me: Me; onSaved: (m: Me) => void }) {
   );
 }
 
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "Admin (master)",
+  rh: "RH",
+  lider: "Líder",
+};
+
+const ROLE_COR: Record<Role, string> = {
+  admin: "bg-brand-500/20 text-brand-200 border-brand-500/30",
+  rh: "bg-blue-500/15 text-blue-200 border-blue-500/30",
+  lider: "bg-surface-2 text-text-muted border-border",
+};
+
 function PerfilHeader({ me }: { me: Me }) {
   const initial = (me.nome || me.email || "?").trim().charAt(0).toUpperCase();
   return (
@@ -86,6 +98,11 @@ function PerfilHeader({ me }: { me: Me }) {
         <p className="text-sm text-text-muted">
           Gerencie seu nome e email da conta.
         </p>
+        <span
+          className={`inline-block mt-1.5 text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded border ${ROLE_COR[me.role]}`}
+        >
+          {ROLE_LABEL[me.role]}
+        </span>
       </div>
     </div>
   );

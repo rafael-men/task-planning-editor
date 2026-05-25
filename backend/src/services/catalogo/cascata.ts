@@ -29,14 +29,11 @@ const PRIORIDADE: Record<Escopo, number> = {
   cargo: 3,
   setor: 2,
   senioridade: 1,
-  fornecedor: 0,
+  global: 0,
 };
 
-function fazMatch(
-  a: AlocRow | CursoAlocRow,
-  h: Hierarquia
-): boolean {
-  if (a.escopo === "fornecedor") return a.alvo_id === h.fornecedor.id;
+function fazMatch(a: AlocRow | CursoAlocRow, h: Hierarquia): boolean {
+  if (a.escopo === "global") return true;
   if (a.escopo === "setor") return a.alvo_id === h.setor.id;
   if (a.escopo === "cargo") return a.alvo_id === h.cargo.id;
   if (a.escopo === "senioridade") return a.alvo_slug === h.senioridade;
@@ -74,7 +71,7 @@ export async function carregarCatalogoHierarquico(
 
   const alocsMatch = ((alocs ?? []) as AlocRow[]).filter((a) => fazMatch(a, hierarquia));
   if (alocsMatch.length === 0) {
-    return { fornecedor: [], setor: [], cargo: [], senioridade: [] };
+    return { global: [], setor: [], cargo: [], senioridade: [] };
   }
 
   const ferramentaIds = Array.from(new Set(alocsMatch.map((a) => a.ferramenta_id)));
@@ -117,7 +114,7 @@ export async function carregarCatalogoHierarquico(
   const escolhida = dedupPorNivelMaisEspecifico(alocsMatch);
 
   const buckets: CatalogoHierarquico = {
-    fornecedor: [],
+    global: [],
     setor: [],
     cargo: [],
     senioridade: [],
@@ -157,7 +154,7 @@ function blocoTxt(label: string, items: AlocacaoFerramenta[]): string | null {
 
 export function formatarCatalogoHierarquicoParaPrompt(c: CatalogoHierarquico): string {
   const blocos = [
-    blocoTxt("- Base do fornecedor (todo mundo passa por isso):", c.fornecedor),
+    blocoTxt("- Base da empresa (todo mundo passa por isso):", c.global),
     blocoTxt("- Específico do setor:", c.setor),
     blocoTxt("- Específico do cargo:", c.cargo),
     blocoTxt("- Ajustes por senioridade:", c.senioridade),

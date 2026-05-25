@@ -9,6 +9,10 @@ import { userOf } from "../middleware/auth.js";
 
 export const playbooksRouter = Router();
 
+// Playbooks são individuais (owner_id). Qualquer usuário autenticado
+// tem seus próprios playbooks. Usamos service_role + filtro manual por owner_id
+// (mesmo padrão de onboardings) — RLS está ligada como defesa em profundidade.
+
 playbooksRouter.get("/", async (req, res: Response) => {
   const user = userOf(req);
   const { data, error } = await supabase

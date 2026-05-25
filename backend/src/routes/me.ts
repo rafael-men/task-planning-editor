@@ -21,6 +21,8 @@ meRouter.get("/", async (req, res: Response) => {
     email: data.user.email,
     nome: (data.user.user_metadata?.nome as string | undefined) ?? null,
     created_at: data.user.created_at,
+    role: user.role,
+    setor_id: user.setor_id,
   });
 });
 
@@ -48,5 +50,7 @@ meRouter.patch("/", async (req, res: Response) => {
     email: data.user.email,
     nome: (data.user.user_metadata?.nome as string | undefined) ?? null,
     created_at: data.user.created_at,
+    role: user.role,
+    setor_id: user.setor_id,
   });
 });

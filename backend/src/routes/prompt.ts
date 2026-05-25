@@ -3,11 +3,12 @@ import { supabase } from "../services/supabase.js";
 import { aplicarPromptNoConteudo } from "../services/llm.js";
 import { promptBody, conteudoSchema } from "../types.js";
 import { userOf } from "../middleware/auth.js";
+import { llmRateLimit } from "../middleware/rateLimit.js";
 
 export const promptRouter = Router();
 
 
-promptRouter.post("/:id/prompt/preview", async (req, res: Response) => {
+promptRouter.post("/:id/prompt/preview", llmRateLimit, async (req, res: Response) => {
   const user = userOf(req);
   const parsed = promptBody.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });

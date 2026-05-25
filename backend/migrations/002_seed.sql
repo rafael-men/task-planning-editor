@@ -1,4 +1,4 @@
-insert into public.playbooks (nome, descricao, conteudo) values
+insert into pmo.playbooks (nome, descricao, conteudo) values
 (
   'Playbook de desenvolvimento de LP',
   'Processo padrão para criar uma landing page institucional.',

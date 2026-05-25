@@ -1,6 +1,11 @@
 import type { Senioridade } from "../../types.js";
 
-export type Fornecedor = { id: string; nome: string; descricao: string | null };
+
+export type Fornecedor = {
+  id: string;
+  nome: string | null;
+  email: string | null;
+};
 export type Setor = { id: string; slug: string; nome: string; descricao: string | null };
 export type Cargo = {
   id: string;
@@ -34,7 +39,7 @@ export type CursoRow = {
   formato: string | null;
 };
 
-export type Escopo = "fornecedor" | "setor" | "cargo" | "senioridade";
+export type Escopo = "global" | "setor" | "cargo" | "senioridade";
 export type Obrigatoriedade = "obrigatoria" | "sugerida";
 
 export type AlocacaoFerramenta = {
@@ -45,7 +50,7 @@ export type AlocacaoFerramenta = {
 };
 
 export type CatalogoHierarquico = {
-  fornecedor: AlocacaoFerramenta[];
+  global: AlocacaoFerramenta[];
   setor: AlocacaoFerramenta[];
   cargo: AlocacaoFerramenta[];
   senioridade: AlocacaoFerramenta[];

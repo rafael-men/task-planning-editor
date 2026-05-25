@@ -114,7 +114,7 @@ export function OnboardingNew() {
                 <p className="text-xs text-text-muted mt-1">
                   {hierarquia?.cargo.nome ?? "—"} ·{" "}
                   {hierarquia?.setor.nome ?? "—"} ·{" "}
-                  {hierarquia?.fornecedor.nome ?? "—"} · início{" "}
+                  {hierarquia?.fornecedor.nome ?? "(sem nome)"} · início{" "}
                   {new Date(dados.data_inicio).toLocaleDateString()}
                 </p>
               </div>

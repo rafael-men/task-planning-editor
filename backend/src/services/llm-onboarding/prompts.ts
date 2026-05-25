@@ -16,8 +16,8 @@ export function senioridadeLabel(s: Senioridade): string {
 export function formatarHierarquiaParaPrompt(h: Hierarquia): string {
   return [
     "Alocação hierárquica do colaborador:",
-    `- Fornecedor: ${h.fornecedor.nome}${
-      h.fornecedor.descricao ? ` (${h.fornecedor.descricao})` : ""
+    `- Fornecedor (líder responsável): ${h.fornecedor.nome ?? "(sem nome)"}${
+      h.fornecedor.email ? ` <${h.fornecedor.email}>` : ""
     }`,
     `- Setor: ${h.setor.nome}${h.setor.descricao ? ` — ${h.setor.descricao}` : ""}`,
     `- Cargo: ${h.cargo.nome}${h.cargo.descricao ? ` — ${h.cargo.descricao}` : ""}`,
