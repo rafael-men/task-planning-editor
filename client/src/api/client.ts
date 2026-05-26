@@ -1,279 +1,32 @@
-import { supabase } from "../lib/supabase";
+import { playbooksApi } from "./endpoints/playbooks";
+import { onboardingsApi } from "./endpoints/onboardings";
+import { catalogoApi } from "./endpoints/catalogo";
+import { meApi } from "./endpoints/me";
+import { adminApi } from "./endpoints/admin";
 
-export type Secao = {
-  titulo: string;
-  ferramenta: string;
-  passos: string[];
-};
-
-export type Conteudo = { secoes: Secao[] };
-
-export type PlaybookSummary = {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  versao: number;
-  updated_at: string;
-};
-
-export type Playbook = PlaybookSummary & {
-  conteudo: Conteudo;
-  created_at: string;
-};
-
-export type PromptPreview = {
-  antes: Conteudo;
-  depois: Conteudo;
-};
-
-export type Role = "admin" | "rh" | "lider";
-
-export type Me = {
-  id: string;
-  email: string | null;
-  nome: string | null;
-  created_at: string;
-  role: Role;
-  setor_id: string | null;
-};
-
-export type PerfilUsuario = {
-  user_id: string;
-  role: Role;
-  setor_id: string | null;
-  email: string | null;
-  nome: string | null;
-  updated_at: string;
-  setor: { id: string; slug: string; nome: string } | null;
-};
-
-
-export type Senioridade =
-  | "estagio"
-  | "junior"
-  | "pleno"
-  | "senior"
-  | "especialista";
-
-export type Curso = { nome: string; link?: string };
-
-export type Modulo = {
-  titulo: string;
-  ferramenta: string;
-  objetivo: string;
-  duracao_dias: number;
-  data_inicio: string;
-  data_fim: string;
-  atividades: string[];
-  cursos: Curso[];
-  avaliacao?: { tipo: string; criterios: string[] };
-};
-
-export type OnboardingConteudo = {
-  resumo: string;
-  modulos: Modulo[];
-};
-
-/**
- * Fornecedor = um usuário cadastrado (líder) que é o responsável pela contratação.
- * Identificado pelo email; exibido pelo nome ou "(sem nome)" se vazio.
- */
-export type Fornecedor = {
-  id: string;
-  nome: string | null;
-  email: string | null;
-};
-export type Setor = {
-  id: string;
-  slug: string;
-  nome: string;
-  descricao?: string | null;
-};
-export type Cargo = {
-  id: string;
-  setor_id: string;
-  nome: string;
-  descricao?: string | null;
-};
-
-export type OnboardingDados = {
-  nome: string;
-  fornecedor_user_id: string;
-  setor_id: string;
-  cargo_id: string;
-  senioridade: Senioridade;
-  lider?: string;
-  descricao?: string;
-  data_inicio: string;
-};
-
-export type OnboardingSummary = {
-  id: string;
-  nome: string;
-  senioridade: Senioridade;
-  data_inicio: string;
-  versao: number;
-  updated_at: string;
-  fornecedor_user_id: string | null;
-  fornecedor: Fornecedor | null;
-  setor: Pick<Setor, "id" | "slug" | "nome"> | null;
-  cargo: Pick<Cargo, "id" | "nome"> | null;
-};
-
-export type StatusModulo = "pendente" | "em_andamento" | "concluido";
-
-export type ProgressoModulo = {
-  status: StatusModulo;
-  atualizado_em?: string;
-  observacao?: string;
-};
-
-/** Mapa: índice do módulo (string) → progresso. */
-export type Progresso = Record<string, ProgressoModulo>;
-
-export type Onboarding = OnboardingSummary & {
-  lider: string | null;
-  descricao: string | null;
-  conteudo: OnboardingConteudo;
-  progresso: Progresso;
-  created_at: string;
-  fornecedor: Fornecedor | null;
-  setor: Setor | null;
-  cargo: Cargo | null;
-};
-
-export type Hierarquia = {
-  fornecedor: Fornecedor;
-  setor: Setor;
-  cargo: Cargo;
-  senioridade: Senioridade;
-};
-
-export type OnboardingPreview = {
-  dados: OnboardingDados;
-  hierarquia: Hierarquia;
-  conteudo: OnboardingConteudo;
-};
-
-export type OnboardingPromptPreview = {
-  antes: OnboardingConteudo;
-  depois: OnboardingConteudo;
-};
-
-const BASE = "/api";
-
-async function authHeader(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-    ...(await authHeader()),
-    ...((init?.headers as Record<string, string> | undefined) ?? {}),
-  };
-  // Timeout de 60s — evita o botão "Salvando..." ficar pendurado para sempre
-  // quando o servidor não responde ou a rede caiu.
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
-  let res: Response;
-  try {
-    res = await fetch(BASE + path, { ...init, headers, signal: controller.signal });
-  } catch (e) {
-    clearTimeout(timeout);
-    if ((e as Error).name === "AbortError") {
-      throw new Error("Tempo esgotado (60s). Verifique se o backend está rodando.");
-    }
-    throw e;
-  }
-  clearTimeout(timeout);
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const body = await res.json();
-      msg = typeof body.error === "string" ? body.error : JSON.stringify(body.error ?? body);
-    } catch {
-      /* sem body — mantém HTTP <status> */
-    }
-    throw new Error(msg);
-  }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
-}
+export * from "./types";
 
 export const api = {
-  list: () => request<PlaybookSummary[]>("/playbooks"),
-  get: (id: string) => request<Playbook>(`/playbooks/${id}`),
-  create: (body: { nome: string; descricao?: string; conteudo?: Conteudo }) =>
-    request<Playbook>("/playbooks", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: { nome?: string; descricao?: string | null; conteudo?: Conteudo }) =>
-    request<Playbook>(`/playbooks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  remove: (id: string) => request<void>(`/playbooks/${id}`, { method: "DELETE" }),
-  previewPrompt: (id: string, prompt: string) =>
-    request<PromptPreview>(`/playbooks/${id}/prompt/preview`, {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
-    }),
-  getMe: () => request<Me>("/me"),
-  updateMe: (body: { nome?: string; email?: string }) =>
-    request<Me>("/me", { method: "PATCH", body: JSON.stringify(body) }),
 
-
-  listOnboardings: () => request<OnboardingSummary[]>("/onboardings"),
-  getOnboarding: (id: string) => request<Onboarding>(`/onboardings/${id}`),
-  previewOnboarding: (dados: OnboardingDados) =>
-    request<OnboardingPreview>("/onboardings/preview", {
-      method: "POST",
-      body: JSON.stringify(dados),
-    }),
-  createOnboarding: (body: OnboardingDados & { conteudo: OnboardingConteudo }) =>
-    request<Onboarding>("/onboardings", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  updateOnboarding: (
-    id: string,
-    body: Partial<OnboardingDados> & { conteudo?: OnboardingConteudo }
-  ) =>
-    request<Onboarding>(`/onboardings/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-  removeOnboarding: (id: string) =>
-    request<void>(`/onboardings/${id}`, { method: "DELETE" }),
-  previewOnboardingPrompt: (id: string, prompt: string) =>
-    request<OnboardingPromptPreview>(`/onboardings/${id}/prompt/preview`, {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
-    }),
-  atualizarProgresso: (
-    id: string,
-    body: { modulo_idx: number; status: StatusModulo; observacao?: string }
-  ) =>
-    request<{ progresso: Progresso }>(`/onboardings/${id}/progresso`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-
-  // catálogo / hierarquia
-  /** Lista usuários (líderes) que podem ser escolhidos como fornecedor. */
-  listLideres: () => request<Fornecedor[]>("/catalogo/lideres"),
-  listSetores: () => request<Setor[]>("/catalogo/setores"),
-  listCargos: (setorId?: string) =>
-    request<Cargo[]>(
-      `/catalogo/cargos${setorId ? `?setor_id=${encodeURIComponent(setorId)}` : ""}`
-    ),
-
-  // admin (apenas RH)
-  listPerfis: () => request<PerfilUsuario[]>("/admin/perfis"),
-  updatePerfil: (
-    userId: string,
-    body: { role?: Role; setor_id?: string | null }
-  ) =>
-    request<{ user_id: string; role: Role; setor_id: string | null; updated_at: string }>(
-      `/admin/perfis/${userId}`,
-      { method: "PATCH", body: JSON.stringify(body) }
-    ),
+  list: playbooksApi.list,
+  get: playbooksApi.get,
+  create: playbooksApi.create,
+  update: playbooksApi.update,
+  remove: playbooksApi.remove,
+  previewPrompt: playbooksApi.previewPrompt,
+  getMe: meApi.get,
+  updateMe: meApi.update,
+  listOnboardings: onboardingsApi.list,
+  getOnboarding: onboardingsApi.get,
+  previewOnboarding: onboardingsApi.preview,
+  createOnboarding: onboardingsApi.create,
+  updateOnboarding: onboardingsApi.update,
+  removeOnboarding: onboardingsApi.remove,
+  previewOnboardingPrompt: onboardingsApi.previewPrompt,
+  atualizarProgresso: onboardingsApi.atualizarProgresso,
+  listLideres: catalogoApi.listLideres,
+  listSetores: catalogoApi.listSetores,
+  listCargos: catalogoApi.listCargos,
+  listPerfis: adminApi.listPerfis,
+  updatePerfil: adminApi.updatePerfil,
 };

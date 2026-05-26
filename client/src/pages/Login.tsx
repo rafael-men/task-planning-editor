@@ -29,7 +29,7 @@ export function Login() {
 
   return (
     <AuthCard
-      icon={<LogIn className="size-5" />}
+      icon={<LogIn size={48} className="text-brand-500" />}
       title="Entrar"
       subtitle="Acesse sua conta"
       footer={
