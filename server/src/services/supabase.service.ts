@@ -1,10 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService implements OnModuleInit {
-  private adminClient: SupabaseClient<any, any, any>;
-  private anonClient: SupabaseClient<any, any, any>;
+  private adminClient!: SupabaseClient<any, any, any>;
+  private anonClient!: SupabaseClient<any, any, any>;
 
   onModuleInit() {
     const url = process.env.SUPABASE_URL;
@@ -41,10 +42,24 @@ export class SupabaseService implements OnModuleInit {
     return data.user;
   }
 
-  async listUsers(perPage = 200) {
-    const { data, error } = await this.adminClient.auth.admin.listUsers({ perPage });
-    if (error) throw new Error(error.message);
-    return data.users;
+  
+  async getUsersByIds(ids: string[]): Promise<User[]> {
+    if (ids.length === 0) return [];
+    const results = await Promise.all(ids.map((id) => this.getUserById(id)));
+    return results.filter((u): u is User => u !== null);
+  }
+
+  async listUsers(): Promise<User[]> {
+    const all: User[] = [];
+    let page = 1;
+    while (true) {
+      const { data, error } = await this.adminClient.auth.admin.listUsers({ perPage: 200, page });
+      if (error) throw new Error(error.message);
+      all.push(...data.users);
+      if (data.users.length < 200) break;
+      page++;
+    }
+    return all;
   }
 
   async updateUser(userId: string, patch: { email?: string; user_metadata?: Record<string, unknown> }) {

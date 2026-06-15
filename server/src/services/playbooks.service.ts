@@ -46,10 +46,16 @@ export class PlaybooksService {
     if (!parsed.success)
       throw new BadRequestException(parsed.error.flatten());
 
+    let conteudo = parsed.data.conteudo ?? { secoes: [] };
+
+    if (parsed.data.prompt) {
+      conteudo = await this.llm.gerarPlaybook(parsed.data.prompt);
+    }
+
     const playbook = this.playbookRepo.create({
       nome: parsed.data.nome,
       descricao: parsed.data.descricao ?? null,
-      conteudo: parsed.data.conteudo ?? { secoes: [] },
+      conteudo,
       ownerId,
     });
     return this.playbookRepo.save(playbook);
@@ -69,23 +75,37 @@ export class PlaybooksService {
         throw new BadRequestException(ok.error.flatten());
     }
 
-    await this.historicoRepo.save(
-      this.historicoRepo.create({
-        playbookId: atual.id,
-        conteudo: atual.conteudo,
-        versao: atual.versao,
-        prompt: null,
-      }),
-    );
-
     if (parsed.data.nome !== undefined) atual.nome = parsed.data.nome;
-    if (parsed.data.descricao !== undefined)
-      atual.descricao = parsed.data.descricao;
+    if (parsed.data.descricao !== undefined) atual.descricao = parsed.data.descricao;
     if (parsed.data.conteudo !== undefined)
       atual.conteudo = parsed.data.conteudo as Record<string, unknown>;
-    atual.versao += 1;
 
-    return this.playbookRepo.save(atual);
+  
+    await Promise.all([
+      this.historicoRepo.save(
+        this.historicoRepo.create({
+          playbookId: atual.id,
+          conteudo: atual.conteudo,
+          versao: atual.versao,
+          prompt: null,
+        }),
+      ),
+      this.playbookRepo
+        .createQueryBuilder()
+        .update(Playbook)
+        .set({
+          nome: atual.nome,
+          descricao: atual.descricao,
+          conteudo: () => ':conteudo::jsonb',
+          versao: () => 'versao + 1',
+        })
+        .setParameters({ conteudo: JSON.stringify(atual.conteudo) })
+        .where('id = :id AND owner_id = :ownerId', { id: atual.id, ownerId })
+        .execute(),
+    ]);
+
+    atual.versao = (atual.versao ?? 0) + 1;
+    return atual;
   }
 
   async remover(id: string, ownerId: string) {

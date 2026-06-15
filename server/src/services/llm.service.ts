@@ -9,17 +9,17 @@ import {
   type OnboardingConteudo,
 } from '../lib/schemas';
 
-const RESEARCH_SYSTEM = `Você é um pesquisador de fluxos operacionais de ferramentas SaaS e dev.
-Você recebe (1) um Playbook atual em JSON e (2) uma instrução do usuário (geralmente trocar uma ferramenta por outra).
-Sua tarefa é produzir um BRIEFING curto e prático sobre como executar as etapas equivalentes na ferramenta nova mencionada na instrução.
+const CREATOR_SYSTEM = `Você é um especialista em criação de Playbooks operacionais.
+Você recebe uma descrição/instrução do usuário sobre o playbook que ele quer criar.
+Sua tarefa é gerar o conteúdo completo do playbook em JSON.
 
-Formato da resposta (texto puro, em português):
-- Liste, para cada seção/passo do Playbook que envolve a ferramenta antiga, o equivalente real na ferramenta nova.
-- Use termos próprios da ferramenta nova.
-- Não invente — se algo não tem equivalente direto, diga "não há equivalente direto, sugerir X".
-- Cite a URL fonte entre parênteses quando relevante.
-- Máximo 12 bullets, foco em acionável.
-Não devolva JSON. Não tente reescrever o Playbook. Só o briefing.`;
+Regras obrigatórias:
+- Responda com um único objeto JSON válido, sem comentários, sem markdown, sem texto fora do JSON.
+- Use o schema: { "secoes": [ { "titulo": string, "ferramenta": string, "passos": string[] } ] }.
+- Crie entre 3 e 8 seções relevantes ao tema, cada uma com 3 a 6 passos concretos e acionáveis.
+- O campo "ferramenta" deve ser o nome da ferramenta principal usada naquela seção (ex: "GitHub", "Jira", "VS Code"). Se não houver ferramenta específica, use string vazia.
+- Escreva em português do Brasil.
+- Os passos devem ser práticos e específicos, não genéricos.`;
 
 const EDITOR_SYSTEM = `Você é um editor de Playbooks operacionais.
 Você recebe (1) o JSON atual do conteúdo do Playbook, (2) uma instrução em linguagem natural e (3) um BRIEFING de pesquisa sobre a ferramenta nova.
@@ -41,10 +41,10 @@ Regras obrigatórias:
 
 @Injectable()
 export class LlmService implements OnModuleInit {
-  private groq: Groq;
-  private tavilyClient: ReturnType<typeof tavily>;
-  private model: string;
-  private enableWebSearch: boolean;
+  private groq!: Groq;
+  private tavilyClient!: ReturnType<typeof tavily>;
+  private model!: string;
+  private enableWebSearch!: boolean;
 
   onModuleInit() {
     const apiKey = process.env.GROQ_API_KEY;
@@ -64,25 +64,21 @@ export class LlmService implements OnModuleInit {
     }
   }
 
-  private async pesquisarWebPlaybook(
-    conteudoAtual: Conteudo,
-    instrucao: string,
-  ): Promise<string> {
+  private async pesquisarWebPlaybook(instrucao: string): Promise<string> {
     if (!this.enableWebSearch) return '(web search desabilitado)';
     try {
-      const query = `${instrucao} equivalente operacional ferramenta SaaS passos tutorial`;
-      const result = await this.tavilyClient.search(query, {
-        maxResults: 5,
-        searchDepth: 'basic',
-      });
-      const bullets = result.results
-        .slice(0, 5)
-        .map((r) => `- ${r.title}: ${r.content?.slice(0, 200)} (${r.url})`)
-        .join('\n');
-      return bullets || '(sem resultados de busca)';
+      const result = await this.tavilyClient.search(
+        `${instrucao} equivalente operacional ferramenta SaaS passos tutorial`,
+        { maxResults: 5, searchDepth: 'basic' },
+      );
+      return (
+        result.results
+          .slice(0, 5)
+          .map((r) => `- ${r.title}: ${r.content?.slice(0, 200)} (${r.url})`)
+          .join('\n') || '(sem resultados de busca)'
+      );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[llm] tavily falhou:', msg);
+      console.warn('[llm] tavily falhou:', err instanceof Error ? err.message : err);
       return '(briefing indisponível — prossiga apenas com seu conhecimento)';
     }
   }
@@ -91,23 +87,21 @@ export class LlmService implements OnModuleInit {
     cargo: string,
     senioridade: string,
     setor: string,
-    descricao?: string,
   ): Promise<string> {
     if (!this.enableWebSearch) return '(web search desabilitado)';
     try {
-      const query = `onboarding técnico ${cargo} ${senioridade} ${setor} boas práticas 2025 estrutura módulos`;
-      const result = await this.tavilyClient.search(query, {
-        maxResults: 5,
-        searchDepth: 'basic',
-      });
-      const bullets = result.results
-        .slice(0, 5)
-        .map((r) => `- ${r.title}: ${r.content?.slice(0, 200)} (${r.url})`)
-        .join('\n');
-      return bullets || '(sem resultados de busca)';
+      const result = await this.tavilyClient.search(
+        `onboarding técnico ${cargo} ${senioridade} ${setor} boas práticas 2025 estrutura módulos`,
+        { maxResults: 5, searchDepth: 'basic' },
+      );
+      return (
+        result.results
+          .slice(0, 5)
+          .map((r) => `- ${r.title}: ${r.content?.slice(0, 200)} (${r.url})`)
+          .join('\n') || '(sem resultados de busca)'
+      );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[llm-onboarding] tavily falhou:', msg);
+      console.warn('[llm-onboarding] tavily falhou:', err instanceof Error ? err.message : err);
       return '(briefing indisponível)';
     }
   }
@@ -142,19 +136,18 @@ export class LlmService implements OnModuleInit {
     if (!result.success) {
       throw new Error(
         'JSON do LLM fora do schema: ' +
-          result.error.issues
-            .map((i) => `${i.path.join('.')} ${i.message}`)
-            .join('; '),
+          result.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; '),
       );
     }
     return result.data;
   }
 
-  async aplicarPromptNoConteudo(
-    conteudoAtual: Conteudo,
-    instrucao: string,
-  ): Promise<Conteudo> {
-    const briefing = await this.pesquisarWebPlaybook(conteudoAtual, instrucao);
+  async gerarPlaybook(instrucao: string): Promise<Conteudo> {
+    return this.chatJson(CREATOR_SYSTEM, instrucao, conteudoSchema, 0.4);
+  }
+
+  async aplicarPromptNoConteudo(conteudoAtual: Conteudo, instrucao: string): Promise<Conteudo> {
+    const briefing = await this.pesquisarWebPlaybook(instrucao);
 
     const userMessage = [
       'JSON atual do conteúdo:',
@@ -185,40 +178,26 @@ export class LlmService implements OnModuleInit {
     systemPrompt: string;
     hierarquiaPrompt: string;
   }): Promise<OnboardingConteudo> {
-    const briefing = await this.pesquisarWebOnboarding(
-      params.hierarquia.cargo.nome,
-      params.hierarquia.senioridade,
-      params.hierarquia.setor.nome,
-      params.descricao,
-    );
 
-    const userMsg = [
+    const msgBase = [
       params.hierarquiaPrompt,
       '',
       'Dados do colaborador:',
       JSON.stringify(
-        {
-          nome: params.nome,
-          lider: params.lider ?? null,
-          descricao: params.descricao ?? null,
-          data_inicio: params.dataInicio,
-        },
-        null,
-        2,
+        { nome: params.nome, lider: params.lider ?? null, descricao: params.descricao ?? null, data_inicio: params.dataInicio },
+        null, 2,
       ),
-      '',
-      'BRIEFING de pesquisa web:',
-      briefing,
-      '',
-      'Gere a trilha de onboarding em JSON conforme o schema.',
     ].join('\n');
 
-    return this.chatJson(
-      params.systemPrompt,
-      userMsg,
-      onboardingConteudoSchema,
-      0.3,
+    const briefing = await this.pesquisarWebOnboarding(
+      params.hierarquia.cargo.nome,
+      params.hierarquia.senioridade,
+      params.hierarquia.setor.nome,
     );
+
+    const userMsg = [msgBase, '', 'BRIEFING de pesquisa web:', briefing, '', 'Gere a trilha de onboarding em JSON conforme o schema.'].join('\n');
+
+    return this.chatJson(params.systemPrompt, userMsg, onboardingConteudoSchema, 0.3);
   }
 
   async aplicarPromptNoOnboarding(params: {
@@ -239,11 +218,6 @@ export class LlmService implements OnModuleInit {
       'Responda apenas com o novo JSON.',
     ].join('\n');
 
-    return this.chatJson(
-      params.systemPrompt,
-      userMsg,
-      onboardingConteudoSchema,
-      0.2,
-    );
+    return this.chatJson(params.systemPrompt, userMsg, onboardingConteudoSchema, 0.2);
   }
 }

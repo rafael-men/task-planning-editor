@@ -3,6 +3,12 @@ import { Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "./ui/PageHeader";
 import type { Playbook } from "../api/client";
 
+function fmtDate(raw: string | null | undefined) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString("pt-BR");
+}
+
 type Props = {
   pb: Playbook;
   editing: boolean;
@@ -18,7 +24,7 @@ export function PlaybookHeader({ pb, editing, onToggleEdit, onRemove }: Props) {
         <>
           {pb.descricao && <span>{pb.descricao} · </span>}
           <span className="text-xs">
-            v{pb.versao} · atualizado em {new Date(pb.updated_at).toLocaleString()}
+            v{pb.versao} · atualizado em {fmtDate(pb.updated_at)}
           </span>
         </>
       }

@@ -72,10 +72,9 @@ export class OnboardingsService {
   private async resolverFornecedoresEmLote(ids: (string | null)[]) {
     const unicos = [...new Set(ids.filter((x): x is string => !!x))];
     if (unicos.length === 0) return new Map<string, { id: string; email: string | null; nome: string | null }>();
-    const users = await this.supabase.listUsers();
+    const users = await this.supabase.getUsersByIds(unicos);
     const map = new Map<string, { id: string; email: string | null; nome: string | null }>();
     for (const u of users) {
-      if (!unicos.includes(u.id)) continue;
       map.set(u.id, {
         id: u.id,
         email: u.email ?? null,
@@ -243,9 +242,37 @@ export class OnboardingsService {
       atual.setor = hierarquia.setor.slug;
       atual.cargo = hierarquia.cargo.nome;
     }
-    atual.versao += 1;
 
-    return this.repo.save(atual);
+    const updateFields: Record<string, unknown> = { versao: () => 'versao + 1' };
+    const params: Record<string, unknown> = {};
+
+    for (const k of campos) {
+      if (parsed.data[k] !== undefined) {
+        const entityKey = map[k as string] ?? k;
+        const value = (atual as any)[entityKey];
+        if (entityKey === 'conteudo') {
+          updateFields[entityKey] = () => `:conteudo_json::jsonb`;
+          params['conteudo_json'] = JSON.stringify(value);
+        } else {
+          updateFields[entityKey] = value;
+        }
+      }
+    }
+    if (hierarquia) {
+      updateFields['setor'] = atual.setor;
+      updateFields['cargo'] = atual.cargo;
+    }
+
+    await this.repo
+      .createQueryBuilder()
+      .update(Onboarding)
+      .set(updateFields as any)
+      .setParameters(params)
+      .where('id = :id', { id: atual.id })
+      .execute();
+
+    atual.versao = (atual.versao ?? 0) + 1;
+    return atual;
   }
 
   async previewGerar(body: unknown, user: UserCtx) {
@@ -286,6 +313,9 @@ export class OnboardingsService {
   }
 
   async previewPrompt(id: string, body: unknown, user: UserCtx) {
+    if (!ehRHouAdmin(user.role)) {
+      throw new ForbiddenException('Apenas RH ou admin pode editar onboardings via prompt.');
+    }
     const parsed = promptBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException(parsed.error.flatten());
 
@@ -337,15 +367,12 @@ export class OnboardingsService {
     const parsed = atualizarProgressoBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException(parsed.error.flatten());
 
-    const on = await this.repo.findOne({ where: { id } });
+    const on = await this.repo.findOne({
+      where: ehRHouAdmin(user.role)
+        ? { id }
+        : [{ id, fornecedorUserId: user.id }, { id, ownerId: user.id }],
+    });
     if (!on) throw new NotFoundException('Onboarding não encontrado.');
-
-    const ehFornecedor = on.fornecedorUserId === user.id;
-    if (!ehRHouAdmin(user.role) && !ehFornecedor) {
-      throw new ForbiddenException(
-        'Você não tem permissão para atualizar este onboarding.',
-      );
-    }
 
     const totalModulos = ((on.conteudo as any)?.modulos ?? []).length;
     if (parsed.data.modulo_idx >= totalModulos) {

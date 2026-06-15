@@ -22,7 +22,8 @@ export class CatalogoController {
     const ids = perfis.map((p) => p.userId);
     if (ids.length === 0) return [];
 
-    const users = await this.supabase.listUsers();
+  
+    const users = await this.supabase.getUsersByIds(ids);
     const usersById = new Map(users.map((u) => [u.id, u]));
 
     return ids

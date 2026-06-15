@@ -24,21 +24,22 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
+              path="/"
               element={
                 <RequireAuth>
                   <AppLayout />
                 </RequireAuth>
               }
             >
-              <Route path="/" element={<Home />} />
-              <Route path="/playbooks" element={<Playbooks />} />
-              <Route path="/playbooks/:id" element={<PlaybookPage />} />
-              <Route path="/onboardings" element={<Onboardings />} />
-              <Route path="/onboardings/novo" element={<OnboardingNew />} />
-              <Route path="/onboardings/:id" element={<OnboardingDetail />} />
-              <Route path="/perfil" element={<Perfil />} />
+              <Route index element={<Home />} />
+              <Route path="playbooks" element={<Playbooks />} />
+              <Route path="playbooks/:id" element={<PlaybookPage />} />
+              <Route path="onboardings" element={<Onboardings />} />
+              <Route path="onboardings/novo" element={<OnboardingNew />} />
+              <Route path="onboardings/:id" element={<OnboardingDetail />} />
+              <Route path="perfil" element={<Perfil />} />
               <Route
-                path="/admin/perfis"
+                path="admin/perfis"
                 element={
                   <RequireAdmin>
                     <AdminPerfis />
@@ -46,7 +47,7 @@ export default function App() {
                 }
               />
             </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

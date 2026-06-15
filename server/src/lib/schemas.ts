@@ -99,6 +99,7 @@ export const createPlaybookBody = z.object({
   nome: z.string().min(1).max(200),
   descricao: z.string().max(2000).optional(),
   conteudo: conteudoSchema.optional(),
+  prompt: z.string().min(3).max(4000).optional(),
 });
 
 export const updatePlaybookBody = z.object({

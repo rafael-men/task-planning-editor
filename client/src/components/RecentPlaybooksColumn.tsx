@@ -3,6 +3,12 @@ import { FileText } from "lucide-react";
 import type { PlaybookSummary } from "../api/client";
 import { EmptyState } from "./ui/EmptyState";
 
+function fmtDate(raw: string | null | undefined) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("pt-BR");
+}
+
 export function RecentPlaybooksColumn({ items }: { items: PlaybookSummary[] }) {
   if (items.length === 0) {
     return (
@@ -29,7 +35,7 @@ export function RecentPlaybooksColumn({ items }: { items: PlaybookSummary[] }) {
               <p className="text-xs text-text-muted mt-1 line-clamp-1">{p.descricao}</p>
             )}
             <p className="text-xs text-text-muted mt-1 opacity-70">
-              v{p.versao} · {new Date(p.updated_at).toLocaleDateString()}
+              v{p.versao} · {fmtDate(p.updated_at)}
             </p>
           </Link>
         </li>

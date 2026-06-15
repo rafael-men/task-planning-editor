@@ -11,6 +11,7 @@ import { Playbook } from '../models/playbook.entity';
 import { PlaybookHistorico } from '../models/playbook-historico.entity';
 import { Setor } from '../models/setor.entity';
 import { InitialSchema1700000000000 } from '../migrations/1700000000000-InitialSchema';
+import { AdminMaster1700000000001 } from '../migrations/1700000000001-AdminMaster';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { InitialSchema1700000000000 } from '../migrations/1700000000000-InitialS
           FerramentaAlocacao,
           CursoAlocacao,
         ],
-        migrations: [InitialSchema1700000000000],
+        migrations: [InitialSchema1700000000000, AdminMaster1700000000001],
         migrationsRun: true,
         synchronize: false,
       }),

@@ -24,9 +24,14 @@ export function Playbooks() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function create(data: { nome: string; descricao?: string }) {
+  async function create(data: { nome: string; descricao?: string; prompt?: string }) {
     try {
-      const p = await api.create({ ...data, conteudo: { secoes: [] } });
+      const p = await api.create({
+        nome: data.nome,
+        descricao: data.descricao,
+        prompt: data.prompt,
+        conteudo: data.prompt ? undefined : { secoes: [] },
+      });
       nav(`/playbooks/${p.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

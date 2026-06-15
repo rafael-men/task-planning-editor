@@ -9,7 +9,7 @@ import type {
 export const playbooksApi = {
   list: () => request<PlaybookSummary[]>("/playbooks"),
   get: (id: string) => request<Playbook>(`/playbooks/${id}`),
-  create: (body: { nome: string; descricao?: string; conteudo?: Conteudo }) =>
+  create: (body: { nome: string; descricao?: string; conteudo?: Conteudo; prompt?: string }) =>
     request<Playbook>("/playbooks", { method: "POST", body: JSON.stringify(body) }),
   update: (
     id: string,
