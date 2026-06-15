@@ -22,8 +22,8 @@ export function Signup() {
     setInfo(null);
     try {
       await signUp(email, password, nome || undefined);
-      setInfo("Conta criada. Se a confirmação por email estiver ativa, verifique sua caixa.");
-      setTimeout(() => nav("/"), 1500);
+      setInfo("Conta criada! Faça login para continuar.");
+      setTimeout(() => nav("/login"), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

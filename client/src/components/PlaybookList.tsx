@@ -3,6 +3,12 @@ import { IconButton, Tooltip } from "@mui/material";
 import { FileText, Trash2 } from "lucide-react";
 import type { PlaybookSummary } from "../api/client";
 
+function fmtDate(raw: string | null | undefined) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString("pt-BR");
+}
+
 type ItemProps = {
   pb: PlaybookSummary;
   onRemove: (id: string) => void;
@@ -20,7 +26,7 @@ function PlaybookListItem({ pb, onRemove }: ItemProps) {
           <p className="text-sm text-text-muted mt-1 line-clamp-2">{pb.descricao}</p>
         )}
         <p className="text-xs text-text-muted mt-2 opacity-70">
-          v{pb.versao} · {new Date(pb.updated_at).toLocaleString()}
+          v{pb.versao} · {fmtDate(pb.updated_at)}
         </p>
       </Link>
       <Tooltip title="Excluir">

@@ -14,7 +14,7 @@ export function AppFooter() {
           <span className="text-text font-medium">Editor de Planejamentos</span>
           {" "}&middot; PMO
         </p>
-        <p className="opacity-80">v1 &middot; {ano}</p>
+        <p className="opacity-80">v0.0.1 &middot; {ano}</p>
       </div>
     </footer>
   );

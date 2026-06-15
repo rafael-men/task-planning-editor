@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Alert, Button, TextField } from "@mui/material";
 import { LogIn } from "lucide-react";
@@ -6,26 +6,38 @@ import { useAuth } from "../auth/AuthProvider";
 import { AuthCard } from "../components/AuthCard";
 
 export function Login() {
-  const { signIn } = useAuth();
+  const { signIn, user, me, loading: authLoading } = useAuth();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const attempted = useRef(false);
+  const navigated = useRef(false);
+
+  useEffect(() => {
+    if (!authLoading && user && me && !navigated.current) {
+      navigated.current = true;
+      nav("/", { replace: true });
+    }
+  }, [authLoading, user, me]); 
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    if (submitting) return;
+    setSubmitting(true);
     setError(null);
+    attempted.current = true;
     try {
       await signIn(email, password);
-      nav("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
+      setSubmitting(false);
+      attempted.current = false;
     }
   }
+
+  const busy = submitting || (attempted.current && authLoading);
 
   return (
     <AuthCard
@@ -65,11 +77,11 @@ export function Login() {
           type="submit"
           variant="contained"
           fullWidth
-          disabled={loading}
+          disabled={busy}
           size="large"
           sx={{ mt: 1 }}
         >
-          {loading ? "Entrando..." : "Entrar"}
+          {busy ? "Entrando..." : "Entrar"}
         </Button>
       </form>
     </AuthCard>

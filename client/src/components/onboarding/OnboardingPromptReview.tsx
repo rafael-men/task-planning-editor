@@ -31,6 +31,19 @@ export function OnboardingPromptReview({
   const [tab, setTab] = useState<Tab>("preview");
   const [tweak, setTweak] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function handleApprove(conteudo: OnboardingConteudo) {
+    setSaving(true);
+    setError(null);
+    try {
+      await onApprove(conteudo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function regen(e: React.FormEvent) {
     e.preventDefault();
@@ -76,7 +89,7 @@ export function OnboardingPromptReview({
         {tab === "edit" && (
           <OnboardingEditor
             initial={depois}
-            onSave={async (c) => onApprove(c)}
+            onSave={handleApprove}
             onCancel={onDiscard}
           />
         )}
@@ -114,11 +127,11 @@ export function OnboardingPromptReview({
               <Button
                 variant="contained"
                 color="success"
-                onClick={() => onApprove(depois)}
-                disabled={regenerating}
-                startIcon={<Check className="size-4" />}
+                onClick={() => handleApprove(depois)}
+                disabled={regenerating || saving}
+                startIcon={saving ? <RefreshCw className="size-4 animate-spin" /> : <Check className="size-4" />}
               >
-                Aprovar e salvar
+                {saving ? "Salvando..." : "Aprovar e salvar"}
               </Button>
             </div>
           </form>
