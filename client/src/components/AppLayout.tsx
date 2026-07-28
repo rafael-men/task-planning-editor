@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { IconButton, Tooltip } from "@mui/material";
+import NotificationsBell from "./ui/NotificationsBell";
 import {
   BookText,
   FileText,
@@ -53,7 +54,6 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header glass */}
       <header
         className="sticky top-0 z-50 border-b"
         style={{
@@ -94,7 +94,7 @@ export function AppLayout() {
               <NavItem to="/admin/perfis" label="Acessos" icon={<ShieldCheck className="size-4" />} />
             )}
 
-            {/* divider */}
+            <NotificationsBell />
             <div className="w-px h-5 mx-1 opacity-30" style={{ background: "rgba(192,57,43,0.6)" }} />
 
             <Tooltip title={user?.email ?? ""}>
