@@ -53,11 +53,17 @@ export class AuthGuard implements CanActivate {
     const header: string | undefined =
       request.headers['authorization'] || request.headers['Authorization'];
 
-    if (!header?.toLowerCase().startsWith('bearer ')) {
+    let token: string | undefined;
+    if (header?.toLowerCase().startsWith('bearer ')) {
+      token = header.slice(7).trim();
+    } else if (request.query?.token && typeof request.query.token === 'string') {
+      token = request.query.token;
+    }
+
+    if (!token) {
       throw new UnauthorizedException('Token ausente.');
     }
 
-    const token = header.slice(7).trim();
     if (!token) throw new UnauthorizedException('Token vazio.');
 
    

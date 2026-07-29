@@ -10,7 +10,10 @@ import { PerfilUsuario } from '../models/perfil-usuario.entity';
 import { Playbook } from '../models/playbook.entity';
 import { PlaybookHistorico } from '../models/playbook-historico.entity';
 import { Setor } from '../models/setor.entity';
+import { Notification } from '../models/notification.entity';
 import { InitialSchema1700000000000 } from '../migrations/1700000000000-InitialSchema';
+import { AdminMaster1700000000001 } from '../migrations/1700000000001-AdminMaster';
+import { NotificationEntity1700000000002 } from '../migrations/1700000000002-NotificationEntity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -19,6 +22,7 @@ export const AppDataSource = new DataSource({
   entities: [
     Playbook,
     PlaybookHistorico,
+    Notification,
     Onboarding,
     PerfilUsuario,
     Setor,
@@ -28,6 +32,6 @@ export const AppDataSource = new DataSource({
     FerramentaAlocacao,
     CursoAlocacao,
   ],
-  migrations: [InitialSchema1700000000000],
+  migrations: [InitialSchema1700000000000, AdminMaster1700000000001, NotificationEntity1700000000002],
   synchronize: false,
 });

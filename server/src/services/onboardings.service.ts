@@ -18,6 +18,7 @@ import {
 } from '../lib/schemas';
 import { CatalogoService } from './catalogo.service';
 import { LlmService } from './llm.service';
+import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
 import {
   formatarCatalogoHierarquicoParaPrompt,
@@ -55,6 +56,7 @@ export class OnboardingsService {
     private readonly repo: Repository<Onboarding>,
     private readonly catalogo: CatalogoService,
     private readonly llm: LlmService,
+    private readonly notificationService: NotificationService,
     private readonly supabase: SupabaseService,
   ) {}
 
@@ -173,7 +175,13 @@ export class OnboardingsService {
       conteudo: (parsed.data as any).conteudo ?? { resumo: '', modulos: [] },
       ownerId: user.id,
     });
-    return this.repo.save(on);
+    const saved = await this.repo.save(on);
+    await this.notificationService.create(
+      user.id,
+      'Onboarding criado',
+      `O onboarding "${saved.nome}" foi criado com sucesso.`,
+    );
+    return saved;
   }
 
   async atualizar(id: string, body: unknown, user: UserCtx) {
