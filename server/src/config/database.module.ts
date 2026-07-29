@@ -9,9 +9,11 @@ import { Onboarding } from '../models/onboarding.entity';
 import { PerfilUsuario } from '../models/perfil-usuario.entity';
 import { Playbook } from '../models/playbook.entity';
 import { PlaybookHistorico } from '../models/playbook-historico.entity';
+import { Notification } from '../models/notification.entity';
 import { Setor } from '../models/setor.entity';
 import { InitialSchema1700000000000 } from '../migrations/1700000000000-InitialSchema';
 import { AdminMaster1700000000001 } from '../migrations/1700000000001-AdminMaster';
+import { NotificationEntity1700000000002 } from '../migrations/1700000000002-NotificationEntity';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { AdminMaster1700000000001 } from '../migrations/1700000000001-AdminMaste
         entities: [
           Playbook,
           PlaybookHistorico,
+          Notification,
           Onboarding,
           PerfilUsuario,
           Setor,
@@ -32,7 +35,7 @@ import { AdminMaster1700000000001 } from '../migrations/1700000000001-AdminMaste
           FerramentaAlocacao,
           CursoAlocacao,
         ],
-        migrations: [InitialSchema1700000000000, AdminMaster1700000000001],
+        migrations: [InitialSchema1700000000000, AdminMaster1700000000001, NotificationEntity1700000000002],
         migrationsRun: true,
         synchronize: false,
       }),

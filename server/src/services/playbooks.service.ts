@@ -14,6 +14,7 @@ import {
   updatePlaybookBody,
 } from '../lib/schemas';
 import { LlmService } from './llm.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class PlaybooksService {
@@ -23,6 +24,7 @@ export class PlaybooksService {
     @InjectRepository(PlaybookHistorico)
     private readonly historicoRepo: Repository<PlaybookHistorico>,
     private readonly llm: LlmService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async listar(ownerId: string) {
@@ -58,7 +60,13 @@ export class PlaybooksService {
       conteudo,
       ownerId,
     });
-    return this.playbookRepo.save(playbook);
+    const saved = await this.playbookRepo.save(playbook);
+    await this.notificationService.create(
+      ownerId,
+      'Playbook criado',
+      `O playbook "${saved.nome}" foi criado com sucesso.`,
+    );
+    return saved;
   }
 
   async atualizar(id: string, body: unknown, ownerId: string) {

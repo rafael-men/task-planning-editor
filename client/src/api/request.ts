@@ -9,6 +9,11 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 
+export async function authToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     "content-type": "application/json",

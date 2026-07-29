@@ -10,12 +10,14 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Bell } from "lucide-react";
+import { authToken, request } from "../../api/request";
 
 type Notification = {
   id: string;
   title: string;
   body?: string;
-  created_at: string;
+  createdAt?: string;
+  created_at?: string;
   read?: boolean;
   source?: string;
 };
@@ -27,33 +29,40 @@ function useNotifications() {
     let mounted = true;
     let es: EventSource | null = null;
 
-    fetch("/api/notifications")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => {
+    (async () => {
+      try {
+        const data = await request<Notification[]>('/notifications');
         if (!mounted) return;
         setItems(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {});
+      } catch {
+      }
+    })();
 
+    (async () => {
+      const token = await authToken();
+      if (!token) return;
 
-    try {
-      es = new EventSource("/api/notifications/sse");
-      es.onmessage = (e) => {
-        try {
-          const payload = JSON.parse(e.data);
-          const notif: Notification = payload.notification ?? payload;
-          setItems((prev) => [notif, ...prev]);
-        } catch (err) {
+      try {
+        es = new EventSource(`/api/notifications/sse?token=${encodeURIComponent(token)}`);
+        es.onmessage = (e) => {
+          try {
+            const payload = JSON.parse(e.data);
+            const notif: Notification = payload.notification ?? payload;
+            setItems((prev) =>
+              prev.some((item) => item.id === notif.id) ? prev : [notif, ...prev],
+            );
+          } catch (err) {
 
-        }
-      };
-      es.onerror = () => {
-        es?.close();
+          }
+        };
+        es.onerror = () => {
+          es?.close();
+          es = null;
+        };
+      } catch {
         es = null;
-      };
-    } catch (err) {
-      es = null;
-    }
+      }
+    })();
 
     return () => {
       mounted = false;
@@ -123,7 +132,7 @@ export function NotificationsBell() {
                 primary={n.title}
                 secondary={
                   <span className="text-xs">
-                    {n.body} · {new Date(n.created_at).toLocaleString("pt-BR")}
+                    {n.body} · {new Date(n.createdAt ?? n.created_at ?? '').toLocaleString("pt-BR")}
                   </span>
                 }
               />
